@@ -8,15 +8,16 @@
     <TableLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
         android:layout_marginTop="10dp"
-        android:shrinkColumns="0"
         android:stretchColumns="1">
 
         <TableRow>
 
             <TextView
                 android:id="@+id/labelUsername"
-                android:layout_width="100dp"
+                android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:gravity="center"
                 android:text="@string/textUsername"
@@ -34,7 +35,7 @@
 
             <TextView
                 android:id="@+id/labelPassword"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:gravity="center"
                 android:text="@string/textPassword"
