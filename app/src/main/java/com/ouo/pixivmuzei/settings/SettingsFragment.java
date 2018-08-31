@@ -268,7 +268,7 @@ public class SettingsFragment extends PreferenceFragment{
         if(PixivSource.isLogin() == 1)
             logIO.setTitle(getString(R.string.labelLogout));
         else
-            logIO.setTitle(getString(R.string.labelLogin));
+            logIO.setTitle(getString(R.string.pref_login));
         int changeInterval = mPreferenceHandler.getConfChangeInterval();
         String s = String.valueOf(changeInterval/1440)+getString(R.string.txtDays)+" "+String.valueOf((changeInterval%1440)/60)+getString(R.string.txtHours)+" "+String.valueOf(changeInterval%1440%60)+getString(R.string.txtMinutes);
         pref_changeInterval.setSummary(s);

@@ -7,7 +7,7 @@
     <string name="pref_noR18">濾除R-18內容</string>
     <string name="pref_sourceMode">來源</string>
     <string name="pref_language">語言</string>
-    <string name="pref_login">登入Pixiv</string>
+    <string name="pref_login">登入 Pixiv</string>
     <string name="pref_loadAmount">圖片載入數目</string>
     <string name="pref_checkUpdate">檢查更新</string>
     <string name="pref_deleteCaches">清除快取</string>
