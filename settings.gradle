@@ -1,0 +1,1 @@
+include ':app', ':secure-prefs-library-release-v0.1.0'

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="pref_loadAmount_entries">
+        <item>50</item>
+        <item>100</item>
+        <item>200</item>
+        <item>300</item>
+        <item>400</item>
+        <item>500</item>
+        <item>1000</item>
+    </string-array>
+    <string-array name="pref_sourceMode_entries">
+        <item>Recommended works</item>
+        <item>Daily ranking</item>
+        <item>Weekly ranking</item>
+        <item>Monthly ranking</item>
+        <item>Rookie ranking</item>
+        <item>Original ranking</item>
+        <item>Popular ranking (Male)</item>
+        <item>Popular ranking (Female)</item>
+        <item>Daily R-18 ranking</item>
+        <item>Weekly R-18 ranking</item>
+        <item>R-18 Popular ranking (Male)</item>
+        <item>R-18 Popular ranking (Female)</item>
+        <item>Weekly R-18G ranking</item>
+        <item>User Favorites (Login required)</item>
+        <item>Following users (Login required)</item>
+    </string-array>
+    <string-array name="pref_sourceMode_entriesValues">
+        <item>recommend</item>
+        <item>day</item>
+        <item>week</item>
+        <item>month</item>
+        <item>week_rookie</item>
+        <item>week_original</item>
+        <item>day_male</item>
+        <item>day_female</item>
+        <item>day_r18</item>
+        <item>week_r18</item>
+        <item>day_male_r18</item>
+        <item>day_female_r18</item>
+        <item>week_r18g</item>
+        <item>userFav</item>
+        <item>following</item>
+    </string-array>
+    <string-array name="pref_language_entries">
+        <item>Auto</item>
+        <item>English-United States</item>
+        <item>Chinese-Traditional</item>
+    </string-array>
+    <string-array name="pref_language_entriesValues">
+        <item>auto</item>
+        <item>en-rUS</item>
+        <item>zh-rTW</item>
+    </string-array>
+    <string-array name="licenses">
+        <item>Secure-preferences</item>
+        <item>Android Change Log</item>
+    </string-array>
+    <string-array name="licenses_filename">
+        <item>license_secure_preferences</item>
+        <item>license_android_change_log</item>
+    </string-array>
+</resources>

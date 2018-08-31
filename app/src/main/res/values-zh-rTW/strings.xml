@@ -1,0 +1,68 @@
+<resources>
+    <string name="source_description">:3</string>
+
+    <string name="pref_changeInterval">更新頻率</string>
+    <string name="pref_onlyWifi">僅透過WIFI更新</string>
+    <string name="pref_noManga">濾除漫畫</string>
+    <string name="pref_noR18">濾除R-18內容</string>
+    <string name="pref_sourceMode">來源</string>
+    <string name="pref_language">語言</string>
+    <string name="pref_login">登入Pixiv</string>
+    <string name="pref_loadAmount">圖片載入數目</string>
+    <string name="pref_checkUpdate">檢查更新</string>
+    <string name="pref_deleteCaches">清除快取</string>
+    <string name="pref_autoCheckUpdate">自動檢查更新</string>
+    <string name="pref_changelog">更新日誌</string>
+    <string name="pref_about">關於</string>
+    <string name="pref_license">PixivMuzei</string>
+    <string name="pref_license_summary">© 2016–2018 Guo Zheng–Yan</string>
+    <string name="pref_license_title">PixivMuzei</string>
+    <string name="pref_openSourceLicenses">開源許可</string>
+    <string name="pref_openSourceLicenses_title">開源許可</string>
+
+    <string name="action_download">下載圖片</string>
+    <string name="textUsername">帳號:</string>
+    <string name="textPassword">密碼:</string>
+    <string name="btnTxtConfirm">確認</string>
+    <string name="btnTxtCancel">取消</string>
+    <string name="btnTxtLogin">登入</string>
+    <string name="btnTxtLogout">登出</string>
+    <string name="labelLogin">登入</string>
+    <string name="labelLogout">登出</string>
+
+    <string name="toast_notLoggedIn">未登入</string>
+    <string name="toast_loginSuccess">登入成功</string>
+    <string name="toast_loginFail">登入失敗</string>
+    <string name="toast_logedOut">已登出</string>
+    <string name="toast_downloading">下載中…</string>
+    <string name="toast_downloadSuccess">下載完成</string>
+    <string name="toast_downloadFail">下載失敗</string>
+    <string name="toast_interval_is_zero">更新頻率不能為零</string>
+    <string name="toast_updateFail">更新失敗</string>
+    <string name="toast_connectFailed">連線失敗</string>
+    <string name="toast_noNet">無可用的網路連線</string>
+    <string name="toast_noWIFI">無可用的WIFI網路</string>
+    <string name="toast_deleteCachesSucceed">清除完成</string>
+    <string name="toast_noCahcesExist">無快取</string>
+
+    <string name="changelog_full_title">更新日誌</string>
+    <string name="changelog_title">新特性</string>
+    <string name="changelog_ok_button">確認</string>
+    <string name="changelog_show_full">更多…</string>
+
+
+    <string name="txtDays">天</string>
+    <string name="txtHours">小時</string>
+    <string name="txtMinutes">分</string>
+    <string name="toast_isNewest">您正在使用最新版本</string>
+    <string name="title_update">更新</string>
+    <string name="txtNewVersion">有可用的更新</string>
+    <string name="btnDownloadUpdate">下載</string>
+    <string name="txtVersion">最新版本: </string>
+    <string name="btn_delete">清除</string>
+    <string name="txt_cacheSize">快取大小:</string>
+
+    <string name="nf_update_title">發現新版本!</string>
+    <string name="nf_update_text">點擊下載PixivMuzei</string>
+
+</resources>

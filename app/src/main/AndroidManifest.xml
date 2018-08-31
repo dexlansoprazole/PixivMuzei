@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.ouo.pixivmuzei">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+    <!-- Required by RemoteMuzeiArtSource -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.CHANGE_CONFIGURATION" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true">
+        <service
+            android:name=".PixivSource"
+            android:label="@string/source_name"
+            android:description="@string/source_description"
+            android:icon="@drawable/ic_source">
+            <intent-filter>
+                <action android:name="com.google.android.apps.muzei.api.MuzeiArtSource" />
+            </intent-filter>
+            <meta-data
+                android:name="settingsActivity"
+                android:value="com.ouo.pixivmuzei.settings.SettingsActivity" />
+            <meta-data android:name="color" android:value="#0096db" />
+        </service>
+
+        <service
+            android:name=".DownloadUpdateService">
+        </service>
+
+        <activity
+            android:name=".settings.SettingsActivity"
+            android:configChanges="locale"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/preferenceTheme"/>
+
+        <activity
+            android:name=".RequsetPermissionsActivity"
+            android:configChanges="locale"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
+
+        <activity
+            android:name=".RequsetPermissionsActivity_API23"
+            android:configChanges="locale"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
+
+    </application>
+
+</manifest>

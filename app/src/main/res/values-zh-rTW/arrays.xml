@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="pref_loadAmount_entries">
+        <item>50</item>
+        <item>100</item>
+        <item>200</item>
+        <item>300</item>
+        <item>400</item>
+        <item>500</item>
+        <item>1000</item>
+    </string-array>
+    <string-array name="pref_sourceMode_entries">
+        <item>推薦作品</item>
+        <item>每日排行</item>
+        <item>每周排行</item>
+        <item>每月排行</item>
+        <item>新人排行</item>
+        <item>原創排行</item>
+        <item>男性熱門排行</item>
+        <item>女性熱門排行</item>
+        <item>每日R-18排行</item>
+        <item>每周R-18排行</item>
+        <item>R-18男性熱門排行</item>
+        <item>R-18女性熱門排行</item>
+        <item>每周R-18G排行</item>
+        <item>用戶收藏 (需登入)</item>
+        <item>關注用戶 (需登入)</item>
+    </string-array>
+    <string-array name="pref_sourceMode_entriesValues">
+        <item>recommend</item>
+        <item>day</item>
+        <item>week</item>
+        <item>month</item>
+        <item>week_rookie</item>
+        <item>week_original</item>
+        <item>day_male</item>
+        <item>day_female</item>
+        <item>day_r18</item>
+        <item>week_r18</item>
+        <item>day_male_r18</item>
+        <item>day_female_r18</item>
+        <item>week_r18g</item>
+        <item>userFav</item>
+        <item>following</item>
+    </string-array>
+    <string-array name="pref_language_entries">
+        <item>自動</item>
+        <item>英語-美國</item>
+        <item>繁體中文</item>
+    </string-array>
+    <string-array name="pref_language_entriesValues">
+        <item>auto</item>
+        <item>en-rUS</item>
+        <item>zh-rTW</item>
+    </string-array>
+    <string-array name="licenses">
+        <item>Secure-preferences</item>
+        <item>Android Change Log</item>
+    </string-array>
+    <string-array name="licenses_filename">
+        <item>license_secure_preferences</item>
+        <item>license_android_change_log</item>
+    </string-array>
+</resources>

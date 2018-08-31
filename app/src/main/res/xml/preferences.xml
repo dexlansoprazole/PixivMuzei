@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceScreen
+        android:key="logIO"
+        android:title="@string/pref_login">
+    </PreferenceScreen>
+    <PreferenceScreen
+        android:key="pref_changeInterval"
+        android:title="@string/pref_changeInterval"
+        android:dialogTitle="@string/pref_changeInterval"
+        android:defaultValue="@string/pref_changeInterval_default"
+        android:persistent="true" />
+    <com.ouo.pixivmuzei.settings.SummariedListPreference
+        android:key="pref_sourceMode"
+        android:title="@string/pref_sourceMode"
+        android:entries="@array/pref_sourceMode_entries"
+        android:entryValues="@array/pref_sourceMode_entriesValues"
+        android:defaultValue="@string/pref_sourceMode_default"/>
+    <com.ouo.pixivmuzei.settings.SummariedSeekbarPreference
+        android:key="pref_loadAmount"
+        android:title="@string/pref_loadAmount"
+        android:defaultValue="@integer/pref_loadAmount_default">
+    </com.ouo.pixivmuzei.settings.SummariedSeekbarPreference>
+    <CheckBoxPreference
+        android:key="pref_onlyWifi"
+        android:title="@string/pref_onlyWifi"
+        android:dialogTitle="@string/pref_onlyWifi"
+        android:persistent="true" />
+    <CheckBoxPreference
+        android:key="pref_noManga"
+        android:title="@string/pref_noManga"
+        android:dialogTitle="@string/pref_noManga"
+        android:persistent="true" />
+    <CheckBoxPreference
+        android:key="pref_noR18"
+        android:title="@string/pref_noR18"
+        android:dialogTitle="@string/pref_noR18"
+        android:persistent="true" />
+    <com.ouo.pixivmuzei.settings.SummariedListPreference
+        android:key="pref_language"
+        android:title="@string/pref_language"
+        android:entries="@array/pref_language_entries"
+        android:entryValues="@array/pref_language_entriesValues"
+        android:defaultValue="@string/pref_language_default"/>
+    <PreferenceScreen
+        android:key="pref_deleteCaches"
+        android:title="@string/pref_deleteCaches">
+    </PreferenceScreen>
+    <PreferenceScreen
+        android:key="pref_about"
+        android:title="@string/pref_about">
+        <PreferenceScreen
+            android:key="pref_license"
+            android:title="@string/pref_license"
+            android:summary="@string/pref_license_summary">
+        </PreferenceScreen>
+        <PreferenceScreen
+            android:key="pref_changelog"
+            android:title="@string/pref_changelog">
+        </PreferenceScreen>
+        <CheckBoxPreference
+            android:key="pref_autoCheckUpdate"
+            android:title="@string/pref_autoCheckUpdate"
+            android:dialogTitle="@string/pref_autoCheckUpdate"
+            android:persistent="true"
+            android:defaultValue="true"/>
+        <PreferenceScreen
+            android:key="pref_checkUpdate"
+            android:title="@string/pref_checkUpdate">
+        </PreferenceScreen>
+        <PreferenceScreen
+            android:key="pref_openSourceLicenses"
+            android:title="@string/pref_openSourceLicenses">
+        </PreferenceScreen>
+    </PreferenceScreen>
+
+</PreferenceScreen>
