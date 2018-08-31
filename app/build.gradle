@@ -23,6 +23,8 @@ android {
                     outputFileName = fileName
                 }
             }
+
+            signingConfig signingConfigs.sign
         }
         debug {
             debuggable true
