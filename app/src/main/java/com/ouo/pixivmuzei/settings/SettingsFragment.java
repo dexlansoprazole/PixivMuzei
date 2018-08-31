@@ -28,6 +28,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
@@ -263,6 +264,7 @@ public class SettingsFragment extends PreferenceFragment{
 
     public void updateUI(){
         PreferenceScreen logIO = (PreferenceScreen)findPreference("logIO");
+        PreferenceScreen pref_license = (PreferenceScreen)findPreference("pref_license");
         if(PixivSource.isLogin() == 1)
             logIO.setTitle(getString(R.string.labelLogout));
         else
@@ -276,6 +278,22 @@ public class SettingsFragment extends PreferenceFragment{
             getPreferenceScreen().findPreference("pref_noR18").setEnabled(false);
         else
             getPreferenceScreen().findPreference("pref_noR18").setEnabled(true);
+
+        //Get application name
+        ApplicationInfo applicationInfo = activity.getApplicationInfo();
+        int stringId = applicationInfo.labelRes;
+        String appName = stringId == 0 ? applicationInfo.nonLocalizedLabel.toString() : activity.getString(stringId);
+
+        //Get version name
+        String versionName = null;
+        try {
+            versionName= activity.getPackageManager().getPackageInfo(activity.getPackageName(), 0).versionName;
+        } catch (PackageManager.NameNotFoundException e) {
+            Log.e(LOG_TAG, "Get version name failed");
+            e.printStackTrace();
+            return;
+        }
+        pref_license.setTitle(appName + " v" + versionName);
     }
 
     public void login() {
