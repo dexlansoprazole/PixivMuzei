@@ -22,8 +22,8 @@ package com.ouo.pixivmuzei;
 import android.Manifest;
 import android.app.Activity;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
+import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
 
 public class RequsetPermissionsActivity_API23 extends Activity{
     private static final String LOG_TAG = "RequsetPermissions";
