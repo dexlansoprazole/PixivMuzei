@@ -21,13 +21,8 @@ package com.ouo.pixivmuzei.settings;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
-import android.os.PowerManager;
-import android.provider.Settings;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
 
 public class SettingsActivity extends Activity{

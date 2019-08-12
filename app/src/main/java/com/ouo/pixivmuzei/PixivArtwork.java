@@ -21,13 +21,9 @@ package com.ouo.pixivmuzei;
 
 import android.util.Log;
 
-import com.google.android.apps.muzei.api.Artwork;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.util.ArrayList;
 
 public class PixivArtwork {
     private static final String LOG_TAG = "PixivArtwork";

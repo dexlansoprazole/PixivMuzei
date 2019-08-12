@@ -22,7 +22,6 @@ package com.ouo.pixivmuzei.settings;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -53,18 +52,14 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.NumberPicker;
-import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import androidx.core.content.res.FontResourcesParserCompat;
 
 import com.google.android.apps.muzei.api.provider.Artwork;
 import com.google.android.apps.muzei.api.provider.ProviderClient;
 import com.google.android.apps.muzei.api.provider.ProviderContract;
 import com.ouo.pixivmuzei.DownloadUpdateService;
 import com.ouo.pixivmuzei.PixivLoginManager;
-import com.ouo.pixivmuzei.PixivWorker;
 import com.ouo.pixivmuzei.PreferenceHandler;
 import com.ouo.pixivmuzei.R;
 
@@ -278,7 +273,7 @@ public class SettingsFragment extends PreferenceFragment{
         else
             logIO.setTitle(getString(R.string.pref_login));
         int changeInterval = mPreferenceHandler.getConfChangeInterval();
-        String s = String.valueOf(changeInterval/1440)+getString(R.string.txtDays)+" "+String.valueOf((changeInterval%1440)/60)+getString(R.string.txtHours)+" "+String.valueOf(changeInterval%1440%60)+getString(R.string.txtMinutes);
+        String s = changeInterval / 1440 +getString(R.string.txtDays)+" "+ (changeInterval % 1440) / 60 +getString(R.string.txtHours)+" "+ changeInterval % 1440 % 60 +getString(R.string.txtMinutes);
         pref_changeInterval.setSummary(s);
 
         s = mPreferenceHandler.getConfSourceMode();
@@ -373,8 +368,8 @@ public class SettingsFragment extends PreferenceFragment{
                 final View loginView;
                 loginView = inflater.inflate(R.layout.login, null);
                 //progressBar = (ProgressBar) loginView.findViewById(R.id.progressBar);
-                txtUsername = (EditText) loginView.findViewById(R.id.username);
-                txtPassword = (EditText) loginView.findViewById(R.id.password);
+                txtUsername = loginView.findViewById(R.id.username);
+                txtPassword = loginView.findViewById(R.id.password);
 
                 if (mPixivLoginManager.getLastUsername() != null && mPixivLoginManager.getLastPassword() != null) {
                     txtUsername.setText(mPixivLoginManager.getLastUsername());
@@ -403,7 +398,7 @@ public class SettingsFragment extends PreferenceFragment{
                 AlertDialog.Builder logoutDialogBuilder = new AlertDialog.Builder(getActivity());
                 final View logoutView;
                 logoutView = inflater.inflate(R.layout.logout, null);
-                TextView txtusername = (TextView) logoutView.findViewById(R.id.txtLogout);
+                TextView txtusername = logoutView.findViewById(R.id.txtLogout);
                 txtusername.setText(mPixivLoginManager.getUsername());
                 logoutDialogBuilder.setTitle(getString(R.string.labelLogout));
                 logoutDialogBuilder.setView(logoutView);
@@ -425,9 +420,9 @@ public class SettingsFragment extends PreferenceFragment{
                 AlertDialog.Builder timePickerBuilder = new AlertDialog.Builder(getActivity());
                 int changeInterval = mPreferenceHandler.getConfChangeInterval();
                 View timePickerView = inflater.inflate(R.layout.timepicker, null);
-                final NumberPicker numPicker01 = (NumberPicker) timePickerView.findViewById(R.id.numPicker01);
-                final NumberPicker numPicker02 = (NumberPicker) timePickerView.findViewById(R.id.numPicker02);
-                final NumberPicker numPicker03 = (NumberPicker) timePickerView.findViewById(R.id.numPicker03);
+                final NumberPicker numPicker01 = timePickerView.findViewById(R.id.numPicker01);
+                final NumberPicker numPicker02 = timePickerView.findViewById(R.id.numPicker02);
+                final NumberPicker numPicker03 = timePickerView.findViewById(R.id.numPicker03);
                 numPicker01.setMinValue(0);
                 numPicker01.setMaxValue(31);
                 numPicker02.setMinValue(0);
@@ -463,8 +458,8 @@ public class SettingsFragment extends PreferenceFragment{
             case "deleteCaches":
                 AlertDialog.Builder deleteCachesDialogBuilder = new AlertDialog.Builder(mContext);
                 final View deleteCachesView = inflater.inflate(R.layout.delete_caches_confirm, null);
-                TextView txtCacheSize = (TextView) deleteCachesView.findViewById(R.id.txtCacheSize);
-                TextView valueCacheSize = (TextView) deleteCachesView.findViewById(R.id.valueCacheSize);
+                TextView txtCacheSize = deleteCachesView.findViewById(R.id.txtCacheSize);
+                TextView valueCacheSize = deleteCachesView.findViewById(R.id.valueCacheSize);
                 txtCacheSize.setText(getString(R.string.txt_cacheSize));
                 valueCacheSize.setText(cacheSize() + " MB");
                 deleteCachesDialogBuilder.setTitle(getString(R.string.pref_deleteCaches));
@@ -486,7 +481,7 @@ public class SettingsFragment extends PreferenceFragment{
             case "license": {
                 AlertDialog.Builder licenseDialogBuilder = new AlertDialog.Builder(mContext);
                 final View licenseView = inflater.inflate(R.layout.license, null);
-                final LinearLayout licenseLayout = (LinearLayout) licenseView.findViewById(R.id.licenseView);
+                final LinearLayout licenseLayout = licenseView.findViewById(R.id.licenseView);
 
                 TextView txtTitle = new TextView(mContext);
                 txtTitle.setText(getString(R.string.pref_license_title));
@@ -530,7 +525,7 @@ public class SettingsFragment extends PreferenceFragment{
             case "openSourceLicenses": {
                 AlertDialog.Builder openSourceLicensesDialogBuilder = new AlertDialog.Builder(mContext);
                 final View licensesView = inflater.inflate(R.layout.license, null);
-                final LinearLayout licensesLayout = (LinearLayout) licensesView.findViewById(R.id.licenseView);
+                final LinearLayout licensesLayout = licensesView.findViewById(R.id.licenseView);
 
                 List<String> licenses = Arrays.asList(getResources().getStringArray(R.array.licenses));
                 List<String> licenses_filename = Arrays.asList(getResources().getStringArray(R.array.licenses_filename));
@@ -582,9 +577,9 @@ public class SettingsFragment extends PreferenceFragment{
         final View updateView;
         final AlertDialog.Builder updateDialogBuilder = new AlertDialog.Builder(getActivity());
         updateView = inflater.inflate(R.layout.new_version, null);
-        TextView txtNewVersion = (TextView) updateView.findViewById(R.id.txtVersion);
-        TextView txtVersionName = (TextView) updateView.findViewById(R.id.txtVersionName);
-        TextView txtChangelog = (TextView) updateView.findViewById(R.id.txtChangelog);
+        TextView txtNewVersion = updateView.findViewById(R.id.txtVersion);
+        TextView txtVersionName = updateView.findViewById(R.id.txtVersionName);
+        TextView txtChangelog = updateView.findViewById(R.id.txtChangelog);
         txtNewVersion.setText(getString(R.string.txtVersion));
         txtVersionName.setText(versionName);
         txtChangelog.setText(changelog);
@@ -687,7 +682,7 @@ public class SettingsFragment extends PreferenceFragment{
                     conn.setUseCaches(false);
                     conn.setRequestMethod("POST");
                     conn.connect();
-                    String data = "data=" + Integer.toString(version);
+                    String data = "data=" + version;
                     OutputStream out = conn.getOutputStream();
                     out.write(data.getBytes());
                     out.flush();

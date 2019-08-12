@@ -22,7 +22,6 @@ package com.ouo.pixivmuzei;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
-import android.util.Log;
 
 public class PreferenceHandler {
     private static final String LOG_TAG = "PreferenceHandler";

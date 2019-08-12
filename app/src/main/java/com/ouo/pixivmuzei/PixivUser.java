@@ -23,8 +23,6 @@ package com.ouo.pixivmuzei;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import static java.lang.Integer.parseInt;
-
 public class PixivUser {
     public JSONObject userData;
 

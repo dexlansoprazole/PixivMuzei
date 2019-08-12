@@ -37,7 +37,7 @@ android {
 }
 
 def ksFile = rootProject.file('keystore.properties')
-def props = new Properties();
+def props = new Properties()
 if (ksFile.canRead()) {
     props.load(new FileInputStream(ksFile))
 

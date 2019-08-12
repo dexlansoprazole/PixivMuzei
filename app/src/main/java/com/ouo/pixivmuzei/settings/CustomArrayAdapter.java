@@ -20,14 +20,14 @@
 package com.ouo.pixivmuzei.settings;
 
 import android.content.Context;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.RadioButton;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.ouo.pixivmuzei.PixivLoginManager;
 import com.ouo.pixivmuzei.R;
@@ -40,7 +40,7 @@ public class CustomArrayAdapter extends ArrayAdapter<CharSequence> {
     public CustomArrayAdapter(Context context, CharSequence[] sourceModes, Object callback) {
         super(context, 0, sourceModes);
         mPixivLoginManager = new PixivLoginManager(context);
-        this.callback = callback;
+        CustomArrayAdapter.callback = callback;
     }
 
     public interface OnSourceModeSelectedListener {
@@ -65,7 +65,7 @@ public class CustomArrayAdapter extends ArrayAdapter<CharSequence> {
         if (convertView == null) {
             convertView = LayoutInflater.from(getContext()).inflate(R.layout.listitem, parent, false);
         }
-        RadioButton rbItem = (RadioButton)convertView.findViewById(R.id.rbItem);
+        RadioButton rbItem = convertView.findViewById(R.id.rbItem);
         rbItem.setTag(position);
         rbItem.setText(sourceMode);
         if(position >= 13 && mPixivLoginManager.loginStatus() != PixivLoginManager.LOGIN_STATUS_PERSONAL){

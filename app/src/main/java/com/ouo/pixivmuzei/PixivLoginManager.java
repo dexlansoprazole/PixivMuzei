@@ -21,7 +21,6 @@ package com.ouo.pixivmuzei;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.util.Log;
 
 import com.ouo.pixivmuzei.PAPIExceptions.GetDataFailedException;
@@ -36,8 +35,6 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
-
-import static android.content.Context.MODE_PRIVATE;
 
 public class PixivLoginManager {
     private static final String LOG_TAG = "PixivLoginManager";

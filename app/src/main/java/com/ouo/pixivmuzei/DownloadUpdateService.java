@@ -34,12 +34,12 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.util.Log;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.PermissionChecker;
-import android.util.Log;
-import android.widget.Toast;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -134,7 +134,7 @@ public class DownloadUpdateService extends Service {
                     conn.setUseCaches(false);
                     conn.setRequestMethod("POST");
                     conn.connect();
-                    String data = "data=" + Integer.toString(version);
+                    String data = "data=" + version;
                     OutputStream out = conn.getOutputStream();
                     out.write(data.getBytes());
                     out.flush();

@@ -27,6 +27,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.SeekBar;
 import android.widget.TextView;
+
 import com.ouo.pixivmuzei.R;
 
 
@@ -68,11 +69,11 @@ public class SummariedSeekbarPreference extends DialogPreference implements Seek
     protected void onBindDialogView(View view) {
         super.onBindDialogView(view);
 
-        seekbar = (SeekBar) view.findViewById(R.id.seekBar);
+        seekbar = view.findViewById(R.id.seekBar);
         seekbar.setMax(600);
         seekbar.setProgress(currentValue);
         seekbar.setOnSeekBarChangeListener(this);
-        seekbarValue = (TextView) view.findViewById(R.id.seekBarValue);
+        seekbarValue = view.findViewById(R.id.seekBarValue);
         seekbarValue.setText(Integer.toString(currentValue));
     }
 

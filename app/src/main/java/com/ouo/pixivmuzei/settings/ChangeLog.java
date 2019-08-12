@@ -14,18 +14,11 @@
  */
 package com.ouo.pixivmuzei.settings;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager.NameNotFoundException;
-import android.graphics.Color;
-import android.graphics.drawable.Drawable;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.util.TypedValue;
@@ -33,6 +26,11 @@ import android.view.ContextThemeWrapper;
 import android.webkit.WebView;
 
 import com.ouo.pixivmuzei.R;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 
 public class ChangeLog {
 
@@ -200,7 +198,7 @@ public class ChangeLog {
     /** modes for HTML-Lists (bullet, numbered) */
     private enum Listmode {
         NONE, ORDERED, UNORDERED,
-    };
+    }
 
     private Listmode listMode = Listmode.NONE;
     private StringBuffer sb = null;
