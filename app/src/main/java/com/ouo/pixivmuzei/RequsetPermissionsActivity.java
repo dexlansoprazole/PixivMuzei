@@ -21,65 +21,29 @@ package com.ouo.pixivmuzei;
 
 import android.Manifest;
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
-import android.util.Log;
 
-import permissions.dispatcher.NeedsPermission;
-import permissions.dispatcher.OnShowRationale;
-import permissions.dispatcher.PermissionRequest;
-import permissions.dispatcher.RuntimePermissions;
-
-@RuntimePermissions
 public class RequsetPermissionsActivity extends Activity{
     private static final String LOG_TAG = "RequsetPermissions";
     private static final int REQUEST_EXTERNAL_STORAGE = 2;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        //RequsetPermissionsActivityPermissionsDispatcher.RequsetPermissionsWithCheck();
-        showPermissionDialog(new PermissionRequest() {
-            @Override
-            public void proceed() {
-                Log.d(LOG_TAG, "proceed");
-            }
-
-            @Override
-            public void cancel() {
-                Log.d(LOG_TAG, "cancel");
-            }
-        });
-    }
-
-    @NeedsPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-    public void RequsetPermissions(){
+        ActivityCompat.requestPermissions(
+                this,
+                new String[] {Manifest.permission.READ_EXTERNAL_STORAGE,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                REQUEST_EXTERNAL_STORAGE
+        );
 
     }
 
-    @OnShowRationale(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-    public void showPermissionDialog(final PermissionRequest request) {
-//        ActivityCompat.requestPermissions(
-//                this,
-//                new String[] {Manifest.permission.READ_EXTERNAL_STORAGE,
-//                        Manifest.permission.WRITE_EXTERNAL_STORAGE},
-//                REQUEST_EXTERNAL_STORAGE
-//        );
-
-        new AlertDialog.Builder(this)
-                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        request.proceed();
-                        finish();
-                    }
-                })
-                .setTitle("Permission Denied")
-                .setCancelable(false)
-                .setMessage("External storage accessing permission required")
-                .show();
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        this.finish();
     }
 }

@@ -24,20 +24,34 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.util.Log;
 
+import com.ouo.pixivmuzei.PAPIExceptions.GetDataFailedException;
 import com.securepreferences.SecurePreferences;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.File;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
 
 import static android.content.Context.MODE_PRIVATE;
 
 public class PixivLoginManager {
     private static final String LOG_TAG = "PixivLoginManager";
+    public static final int LOGIN_STATUS_OUT = 0;
+    public static final int LOGIN_STATUS_PUBLIC = 1;
+    public static final int LOGIN_STATUS_PERSONAL = 2;
+    private static final String D_USERNAME = "user_pyda3858";
+    private static final String D_PASSWORD = "pixivmuzeiservice0";
     private SharedPreferences mPreferences;
     private Context mContext;
 
     public PixivLoginManager(Context context){
-        mContext = context;
-        mPreferences = new SecurePreferences(mContext, (String) null, "login_info");
+        this.mContext = context;
+        this.mPreferences = new SecurePreferences(mContext, (String) null, "login_info");
         deleteUnsafeData();
     }
 
@@ -75,42 +89,132 @@ public class PixivLoginManager {
     }
 
     public String getUsername(){
-        final String result = mPreferences.getString("username", null);
-        return result;
+        return mPreferences.getString("username", null);
     }
 
     public String getPassword(){
-        final String result = mPreferences.getString("password", null);
-        return result;
+        return mPreferences.getString("password", null);
     }
 
     public String getLastUsername(){
-        final String result = mPreferences.getString("last_username", null);
-        return result;
+        return mPreferences.getString("last_username", null);
     }
 
     public String getLastPassword(){
-        final String result = mPreferences.getString("last_password", null);
-        return result;
+        return mPreferences.getString("last_password", null);
     }
 
     public String getAccessToken(){
-        final String result = mPreferences.getString("accessToken", null);
-        return result;
+        return mPreferences.getString("accessToken", null);
     }
 
     public String getRefreshToken(){
-        final String result = mPreferences.getString("refreshToken", null);
-        return result;
+        return mPreferences.getString("refreshToken", null);
     }
 
     public String getExpires() {
-        final String result = mPreferences.getString("expires", null);
-        return result;
+        return mPreferences.getString("expires", null);
     }
 
     public String getJo_user() {
-        final String result = mPreferences.getString("jo_user", null);
-        return result;
+        return mPreferences.getString("jo_user", null);
+    }
+
+    public int loginStatus(){
+        if (getAccessToken() != null){
+            if(getUsername().equals(D_USERNAME) && getPassword().equals(D_PASSWORD))
+                return LOGIN_STATUS_PUBLIC;
+            else
+                return LOGIN_STATUS_PERSONAL;
+        }
+        return LOGIN_STATUS_OUT;
+    }
+
+    private String getExpires(int addHour){
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.getDefault());
+        Date dt=new Date();
+        sdf.format(dt);
+        Calendar c = Calendar.getInstance();
+        c.setTime(dt);
+        c.add(Calendar.HOUR, addHour);
+        Date d = c.getTime();
+        return sdf.format(d);
+    }
+
+    private boolean isExpired(){
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.getDefault());
+        String expires = getExpires();
+        Calendar c = Calendar.getInstance();
+        Calendar ce = Calendar.getInstance();
+        try {
+            ce.setTime(sdf.parse(expires));
+        } catch (ParseException e) {
+            Log.e(LOG_TAG,"isExpired");
+            e.printStackTrace();
+        }
+        int result = c.compareTo(ce);
+        return result >= 0;
+    }
+
+    public boolean login(String username, String password){
+        JSONObject loginResponse;
+        JSONObject user;
+        String accessToken;
+        String refreshToken;
+        String expires = getExpires(1);
+
+        if(loginStatus() != PixivLoginManager.LOGIN_STATUS_PERSONAL){
+            if(loginStatus() == PixivLoginManager.LOGIN_STATUS_PUBLIC && username.equals(D_USERNAME) && password.equals(D_PASSWORD))
+                return false;
+            Log.i(LOG_TAG, "Login with '" + username + "'...");
+            //Login by password
+            try {
+                loginResponse = PixivPublicAPI.login(username, password);
+                accessToken = loginResponse.getString("access_token");
+                refreshToken = loginResponse.getString("refresh_token");
+                user = loginResponse.getJSONObject("user");
+                setAccountInfo(username, password);
+                setLoginInfo(accessToken, refreshToken, expires, user.toString());
+                if(!(username.equals(D_USERNAME) || password.equals(D_PASSWORD)))
+                    setLastAccountInfo(username, password);
+                Log.i(LOG_TAG,"Login succeeded");
+            } catch (GetDataFailedException | JSONException e) {
+                Log.w(LOG_TAG, e.getMessage());
+                e.printStackTrace();
+                return true;
+            }
+            Log.d(LOG_TAG, "username: *****" +
+                    "\npassword: *****" +
+                    "\nexpires: " + expires +
+                    "\naccessToken: " + getAccessToken() +
+                    "\nrefreshToken: " + getRefreshToken() +
+                    "\njo_user: " + getJo_user()
+            );
+        }
+        return false;
+    }
+
+    boolean login(){
+        return login(D_USERNAME, D_PASSWORD);
+    }
+
+    void refreshAccessToken(){
+        String expires = getExpires(1);
+        if(isExpired()){
+            Log.i(LOG_TAG,"Refresh accessToken...");
+            //Refresh accessToken
+            try {
+                JSONObject loginResponse = PixivPublicAPI.refreshAccessToken(getRefreshToken());
+                String accessToken = loginResponse.getString("access_token");
+                String refreshToken = loginResponse.getString("refresh_token");
+                JSONObject user = loginResponse.getJSONObject("user");
+                setAccountInfo(getUsername(), getPassword());
+                setLoginInfo(accessToken, refreshToken, expires, user.toString());
+                Log.i(LOG_TAG,"Refresh accessToken succeeded");
+            } catch (GetDataFailedException | JSONException e) {
+                Log.w(LOG_TAG, e.getMessage());
+                e.printStackTrace();
+            }
+        }
     }
 }

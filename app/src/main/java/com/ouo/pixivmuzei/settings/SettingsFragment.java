@@ -21,9 +21,8 @@ package com.ouo.pixivmuzei.settings;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.ComponentName;
-import android.content.ServiceConnection;
 import android.content.BroadcastReceiver;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -33,13 +32,14 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.IBinder;
 import android.os.Looper;
 import android.preference.Preference;
 import android.preference.PreferenceFragment;
@@ -53,17 +53,18 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.NumberPicker;
-import android.widget.ScrollView;
-import android.widget.Scroller;
+import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.apps.muzei.api.MuzeiArtSource;
+import androidx.core.content.res.FontResourcesParserCompat;
+
+import com.google.android.apps.muzei.api.provider.Artwork;
+import com.google.android.apps.muzei.api.provider.ProviderClient;
+import com.google.android.apps.muzei.api.provider.ProviderContract;
 import com.ouo.pixivmuzei.DownloadUpdateService;
-import com.ouo.pixivmuzei.PAPIExceptions.GetDataFailedException;
 import com.ouo.pixivmuzei.PixivLoginManager;
-import com.ouo.pixivmuzei.PixivSource;
-import com.ouo.pixivmuzei.PixivPublicAPI;
+import com.ouo.pixivmuzei.PixivWorker;
 import com.ouo.pixivmuzei.PreferenceHandler;
 import com.ouo.pixivmuzei.R;
 
@@ -80,12 +81,11 @@ import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class SettingsFragment extends PreferenceFragment{
     private static final String LOG_TAG = "SettingsFragment";
@@ -103,109 +103,65 @@ public class SettingsFragment extends PreferenceFragment{
     private AlertDialog openSourceLicensesDialog;
     private AlertDialog loadAmountDialog;
     private Handler mHandler;
-    private Activity activity;
+    private Context mContext;
     private BroadcastReceiver completeReceiver;
     public static boolean isLoadAmountChanged = false;
     public static boolean isSourceModeChanged = false;
-    private boolean isBoundToService = false;
+    private static PreferenceHandler mPreferenceHandler = null;
+    private static PixivLoginManager mPixivLoginManager = null;
 
-    public PreferenceHandler mPreferenceHandler = null;
-    public PixivLoginManager mPixivLoginManager = null;
-
-    private PixivPublicAPI PPAPI;
 
     @Override
-    public void onAttach(Activity activity) {
-        super.onAttach(activity);
-        this.activity = activity;
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        mContext = context;
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.d(LOG_TAG, "onCreate");
 
         addPreferencesFromResource(R.xml.preferences);
-        PPAPI = new PixivPublicAPI(activity);
         pref_changeInterval = (PreferenceScreen) findPreference("pref_changeInterval");
         mHandler = new Handler();
+        mPreferenceHandler = new PreferenceHandler(mContext);
+        mPixivLoginManager = new PixivLoginManager(mContext);
         setLocale();
-
-        if(PixivSource.mContext == null){
-            Log.d(LOG_TAG, "Bind PixivSource service");
-            Intent intent = new Intent(activity, PixivSource.class);
-            activity.bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
-        }
-        else{
-            isBoundToService = false;
-            mPreferenceHandler = new PreferenceHandler(PixivSource.mContext);
-            mPixivLoginManager = new PixivLoginManager(PixivSource.mContext);
-            updateUI();
-        }
+        updateUI();
     }
 
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        Log.d(LOG_TAG, "onDestroy");
-        if(isBoundToService)
-            activity.unbindService(mServiceConnection);
-    }
 
     @Override
     public View onCreateView(LayoutInflater inflater2, ViewGroup container, Bundle savedInstanceState) {
-        Log.d(LOG_TAG, "onCreateView");
-        inflater = activity.getLayoutInflater();
+        inflater = ((Activity)mContext).getLayoutInflater();
         View view = super.onCreateView(inflater2, container, savedInstanceState);
         CreateLoadingDialog();
 
         return view;
     }
 
-    private ServiceConnection mServiceConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            Log.d(LOG_TAG, "onServiceConnected");
-            isBoundToService = true;
-
-            mPreferenceHandler = new PreferenceHandler(PixivSource.mContext);
-            mPixivLoginManager = new PixivLoginManager(PixivSource.mContext);
-            updateUI();
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if(!mPreferenceHandler.getIsSourceUpToDate()) {
+            ProviderClient pc = ProviderContract.getProviderClient(mContext, mContext.getPackageName());
+            Artwork currentArtwork = getCurrentArtwork();
+            if (currentArtwork != null)
+                pc.setArtwork(currentArtwork);
+            Log.i(LOG_TAG, "Cache refreshed");
         }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            Log.d(LOG_TAG, "onServiceDisconnected");
-            isBoundToService = false;
-        }
-    };
-
-    private void setLocale(){
-        Locale locale = getLocaleFromPref();
-        Resources res = getResources();
-        Configuration conf = res.getConfiguration();
-        conf.locale = locale;
-        DisplayMetrics dm = res.getDisplayMetrics();
-        res.updateConfiguration(conf, dm);
     }
 
-    private Locale getLocaleFromPref(){
-        final Activity activity = getActivity();
-        final SharedPreferences languagePre = PreferenceManager.getDefaultSharedPreferences(activity);
-        String lang = languagePre.getString("pref_language", getString(R.string.pref_language_default));
-        Locale locale;
-        switch (lang) {
-            case "en-rUS":
-                locale = new Locale("en", "US");
-                break;
-            case "zh-rTW":
-                locale = new Locale("zh", "TW");
-                break;
-            default:
-                locale = new Locale(Locale.getDefault().getLanguage(), Locale.getDefault().getCountry());
-                break;
-        }
-        return locale;
+    @Override
+    public void onResume() {
+        PreferenceManager.getDefaultSharedPreferences(mContext).registerOnSharedPreferenceChangeListener(mListener);
+        super.onResume();
+    }
+
+    @Override
+    public void onPause() {
+        PreferenceManager.getDefaultSharedPreferences(mContext).unregisterOnSharedPreferenceChangeListener(mListener);
+        super.onPause();
     }
 
     @Override
@@ -221,7 +177,7 @@ public class SettingsFragment extends PreferenceFragment{
                     break;
                 }
 
-                if (PixivSource.isLogin() == 1) {
+                if (mPixivLoginManager.loginStatus() == PixivLoginManager.LOGIN_STATUS_PERSONAL) {
                     createDialog("logout");
                     logoutDialog.show();
                 }
@@ -232,7 +188,7 @@ public class SettingsFragment extends PreferenceFragment{
                 break;
             case "pref_changelog":
                 AlertDialog changeLogDialog;
-                ChangeLog changeLog = new ChangeLog(activity);
+                ChangeLog changeLog = new ChangeLog(mContext);
                 changeLogDialog = changeLog.getLogDialog();
                 changeLogDialog.show();
                 break;
@@ -259,13 +215,65 @@ public class SettingsFragment extends PreferenceFragment{
         return super.onPreferenceTreeClick(preferenceScreen, preference);
     }
 
+    private Artwork getCurrentArtwork(){
+        Artwork result = null;
+        String[] mProjection = {"_id", "_data", "title", "byline", "token", "persistent_uri", "web_uri"};
+        String mSelectionClause = null;
+        String[] mSelectionArgs = null;
+        String mSortOrder = "_id desc";
+        Cursor mCursor = mContext.getContentResolver().query(ProviderContract.getContentUri(mContext.getPackageName()), mProjection, mSelectionClause, mSelectionArgs, mSortOrder);
+        Map<String, String> map = new HashMap<String, String>();
+        if (mCursor != null) {
+            if(mCursor.getCount() >= 2) {
+                mCursor.move(2);
+                for (int i = 0; i < mCursor.getColumnCount(); i++)
+                    map.put(mCursor.getColumnName(i), mCursor.getString(i));
+                result = new Artwork.Builder()
+                        .title(map.get("title"))
+                        .byline(map.get("byline"))
+                        .token(map.get("token"))
+                        .persistentUri(Uri.parse(map.get("persistent_uri")))
+                        .webUri(Uri.parse(map.get("web_uri")))
+                        .build();
+            }
+            mCursor.close();
+        }
+        return result;
+    }
 
+    private void setLocale(){
+        Locale locale = getLocaleFromPref();
+        Resources res = getResources();
+        Configuration conf = res.getConfiguration();
+        conf.setLocale(locale);
+        DisplayMetrics dm = res.getDisplayMetrics();
+        res.updateConfiguration(conf, dm);
+        //TODO: updateConfiguration replacement
+    }
 
+    private Locale getLocaleFromPref(){
+        final Activity activity = getActivity();
+        final SharedPreferences languagePre = PreferenceManager.getDefaultSharedPreferences(activity);
+        String lang = languagePre.getString("pref_language", getString(R.string.pref_language_default));
+        Locale locale;
+        switch (lang) {
+            case "en-rUS":
+                locale = new Locale("en", "US");
+                break;
+            case "zh-rTW":
+                locale = new Locale("zh", "TW");
+                break;
+            default:
+                locale = new Locale(Locale.getDefault().getLanguage(), Locale.getDefault().getCountry());
+                break;
+        }
+        return locale;
+    }
 
     public void updateUI(){
         PreferenceScreen logIO = (PreferenceScreen)findPreference("logIO");
         PreferenceScreen pref_license = (PreferenceScreen)findPreference("pref_license");
-        if(PixivSource.isLogin() == 1)
+        if(mPixivLoginManager.loginStatus() == PixivLoginManager.LOGIN_STATUS_PERSONAL)
             logIO.setTitle(getString(R.string.labelLogout));
         else
             logIO.setTitle(getString(R.string.pref_login));
@@ -280,14 +288,14 @@ public class SettingsFragment extends PreferenceFragment{
             getPreferenceScreen().findPreference("pref_noR18").setEnabled(true);
 
         //Get application name
-        ApplicationInfo applicationInfo = activity.getApplicationInfo();
+        ApplicationInfo applicationInfo = mContext.getApplicationInfo();
         int stringId = applicationInfo.labelRes;
-        String appName = stringId == 0 ? applicationInfo.nonLocalizedLabel.toString() : activity.getString(stringId);
+        String appName = stringId == 0 ? applicationInfo.nonLocalizedLabel.toString() : mContext.getString(stringId);
 
         //Get version name
         String versionName = null;
         try {
-            versionName= activity.getPackageManager().getPackageInfo(activity.getPackageName(), 0).versionName;
+            versionName= mContext.getPackageManager().getPackageInfo(mContext.getPackageName(), 0).versionName;
         } catch (PackageManager.NameNotFoundException e) {
             Log.e(LOG_TAG, "Get version name failed");
             e.printStackTrace();
@@ -309,20 +317,7 @@ public class SettingsFragment extends PreferenceFragment{
                 });
                 String username = txtUsername.getText().toString();
                 String password = txtPassword.getText().toString();
-
-                JSONObject loginResponse = null;
-                JSONObject user = null;
-                String accessToken = null;
-                String refreshToken = null;
-                String expires = getExpires(1);
-                try {
-                    loginResponse = PPAPI.login(username, password);
-                    accessToken = loginResponse.getString("access_token");
-                    refreshToken = loginResponse.getString("refresh_token");
-                    user = loginResponse.getJSONObject("user");
-                } catch (GetDataFailedException | JSONException e) {
-                    Log.e(LOG_TAG, e.getMessage());
-                    e.printStackTrace();
+                if(mPixivLoginManager.login(username, password)){
                     showToast(getString(R.string.toast_loginFail));
                     mHandler.post(new Runnable() {
                         @Override
@@ -334,30 +329,15 @@ public class SettingsFragment extends PreferenceFragment{
                     return;
                 }
 
-                mPixivLoginManager.setAccountInfo(username, password);
-                mPixivLoginManager.setLastAccountInfo(username, password);
-                mPixivLoginManager.setLoginInfo(accessToken, refreshToken, expires, user.toString());
-
-                Log.i(LOG_TAG,"Login succeeded");
-                Log.d(LOG_TAG, "Preferences wrote:"+
-                        "\nusername: " + username+
-                        "\npassword: " + password+
-                        "\nexpires: " + expires+
-                        "\naccessToken: " + mPixivLoginManager.getAccessToken()+
-                        "\nrefreshToken: " + mPixivLoginManager.getRefreshToken()+
-                        "\njo_user: " + mPixivLoginManager.getJo_user()
-                );
-
-                if (activity != null && !activity.isDestroyed()) {
+                if (mContext != null && !((Activity)mContext).isDestroyed()) {
                     loadingDialog.cancel();
                     showToast(getString(R.string.toast_loginSuccess));
-                    ((SettingsActivity) activity).restartFragment();
+                    ((SettingsActivity) mContext).restartFragment();
                 }
             }
         });
         loginThread.start();
         mPreferenceHandler.setIsSourceUpToDate(false);
-        //loginThread.join();
     }
 
     private void logout(){
@@ -374,17 +354,7 @@ public class SettingsFragment extends PreferenceFragment{
         mPreferenceHandler.setIsSourceUpToDate(false);
         showToast(getString(R.string.toast_logedOut));
         updateUI();
-        ((SettingsActivity) activity).restartFragment();
-    }
-
-    private static String getExpires(int addHoour){
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-        Date dt=new Date();
-        Calendar c = Calendar.getInstance();
-        c.setTime(dt);
-        c.add(Calendar.HOUR, addHoour);
-        Date d = c.getTime();
-        return sdf.format(d);
+        ((SettingsActivity) mContext).restartFragment();
     }
 
     private void showToast(final String message){
@@ -415,7 +385,7 @@ public class SettingsFragment extends PreferenceFragment{
                 loginDialogBuilder.setPositiveButton(getString(R.string.btnTxtLogin), new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        if (PixivSource.isLogin() < 1) {
+                        if (mPixivLoginManager.loginStatus() != PixivLoginManager.LOGIN_STATUS_PERSONAL) {
                             login();
                         }
                     }
@@ -482,7 +452,7 @@ public class SettingsFragment extends PreferenceFragment{
                         int r=numPicker01.getValue()*1440+numPicker02.getValue()*60+numPicker03.getValue();
                         if(numPicker01.getValue()==0&&numPicker02.getValue()==0&&numPicker03.getValue()==0){
                             showToast(getString(R.string.toast_interval_is_zero));
-                            r = activity.getResources().getInteger(R.integer.pref_changeInterval_default);
+                            r = mContext.getResources().getInteger(R.integer.pref_changeInterval_default);
                         }
                         mPreferenceHandler.setConfChangeInterval(r);
                         updateUI();
@@ -491,7 +461,7 @@ public class SettingsFragment extends PreferenceFragment{
                 timePickerDialog = timePickerBuilder.create();
                 break;
             case "deleteCaches":
-                AlertDialog.Builder deleteCachesDialogBuilder = new AlertDialog.Builder(activity);
+                AlertDialog.Builder deleteCachesDialogBuilder = new AlertDialog.Builder(mContext);
                 final View deleteCachesView = inflater.inflate(R.layout.delete_caches_confirm, null);
                 TextView txtCacheSize = (TextView) deleteCachesView.findViewById(R.id.txtCacheSize);
                 TextView valueCacheSize = (TextView) deleteCachesView.findViewById(R.id.valueCacheSize);
@@ -514,16 +484,16 @@ public class SettingsFragment extends PreferenceFragment{
                 deleteCachesDialog = deleteCachesDialogBuilder.create();
                 break;
             case "license": {
-                AlertDialog.Builder licenseDialogBuilder = new AlertDialog.Builder(activity);
+                AlertDialog.Builder licenseDialogBuilder = new AlertDialog.Builder(mContext);
                 final View licenseView = inflater.inflate(R.layout.license, null);
                 final LinearLayout licenseLayout = (LinearLayout) licenseView.findViewById(R.id.licenseView);
 
-                TextView txtTitle = new TextView(activity);
+                TextView txtTitle = new TextView(mContext);
                 txtTitle.setText(getString(R.string.pref_license_title));
                 txtTitle.setTextSize(30);
                 txtTitle.setBackgroundColor(Color.WHITE);
                 txtTitle.setTextColor(Color.BLACK);
-                TextView txtLicense = new TextView(activity);
+                TextView txtLicense = new TextView(mContext);
                 txtLicense.setBackgroundColor(Color.WHITE);
                 txtLicense.setTextColor(Color.BLACK);
 
@@ -558,19 +528,19 @@ public class SettingsFragment extends PreferenceFragment{
                 break;
             }
             case "openSourceLicenses": {
-                AlertDialog.Builder openSourceLicensesDialogBuilder = new AlertDialog.Builder(activity);
+                AlertDialog.Builder openSourceLicensesDialogBuilder = new AlertDialog.Builder(mContext);
                 final View licensesView = inflater.inflate(R.layout.license, null);
                 final LinearLayout licensesLayout = (LinearLayout) licensesView.findViewById(R.id.licenseView);
 
                 List<String> licenses = Arrays.asList(getResources().getStringArray(R.array.licenses));
                 List<String> licenses_filename = Arrays.asList(getResources().getStringArray(R.array.licenses_filename));
                 for (int i = 0; i < licenses.size(); i++) {
-                    TextView txtTitle = new TextView(activity);
+                    TextView txtTitle = new TextView(mContext);
                     txtTitle.setText(licenses.get(i));
                     txtTitle.setTextSize(30);
                     txtTitle.setBackgroundColor(Color.WHITE);
                     txtTitle.setTextColor(Color.BLACK);
-                    TextView txtLicense = new TextView(activity);
+                    TextView txtLicense = new TextView(mContext);
                     txtLicense.setBackgroundColor(Color.WHITE);
                     txtLicense.setTextColor(Color.BLACK);
 
@@ -623,8 +593,8 @@ public class SettingsFragment extends PreferenceFragment{
         updateDialogBuilder.setPositiveButton(getString(R.string.btnDownloadUpdate), new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                Intent downloadUpdateService = new Intent(activity, DownloadUpdateService.class);
-                activity.startService(downloadUpdateService);
+                Intent downloadUpdateService = new Intent(mContext, DownloadUpdateService.class);
+                mContext.startService(downloadUpdateService);
             }
         });
         updateDialogBuilder.setNeutralButton(getString(R.string.btnTxtCancel),new DialogInterface.OnClickListener(){
@@ -637,7 +607,7 @@ public class SettingsFragment extends PreferenceFragment{
     }
 
     private void CreateLoadingDialog(){
-        AlertDialog.Builder loadingDialogBuilder = new AlertDialog.Builder(activity);
+        AlertDialog.Builder loadingDialogBuilder = new AlertDialog.Builder(mContext);
         final View loadingView = inflater.inflate(R.layout.loading, null);
         loadingDialogBuilder.setView(loadingView);
         loadingDialogBuilder.setCancelable(false);
@@ -654,7 +624,7 @@ public class SettingsFragment extends PreferenceFragment{
             switch (key) {
                 case "pref_language":
                     setLocale();
-                    ((SettingsActivity) activity).restartFragment();
+                    ((SettingsActivity) mContext).restartFragment();
                     break;
                 case "pref_sourceMode":
                     Log.d(LOG_TAG,"PreferenceChanged : pref_sourceMode");
@@ -680,7 +650,7 @@ public class SettingsFragment extends PreferenceFragment{
 
     private void checkUpdate(){
         //Check network status
-        ConnectivityManager connectivityManager = (ConnectivityManager) activity.getSystemService(Context.CONNECTIVITY_SERVICE);
+        ConnectivityManager connectivityManager = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo netInfo = connectivityManager.getActiveNetworkInfo();
         if(netInfo == null || !netInfo.isConnected()){
             showToast(getString(R.string.toast_noNet));
@@ -694,7 +664,7 @@ public class SettingsFragment extends PreferenceFragment{
                 Looper.prepare();
                 PackageInfo pInfo = null;
                 try {
-                    pInfo = activity.getPackageManager().getPackageInfo(activity.getPackageName(), 0);
+                    pInfo = mContext.getPackageManager().getPackageInfo(mContext.getPackageName(), 0);
                 } catch (PackageManager.NameNotFoundException e) {
                     pInfo.versionName="unknown";
                     pInfo.versionCode=0;
@@ -771,7 +741,7 @@ public class SettingsFragment extends PreferenceFragment{
     }
 
     private void deleteCaches(){
-        final String path = activity.getExternalCacheDir().toString();
+        final String path = mContext.getExternalCacheDir().toString();
         File cacheDir = new File(path);
         if(cacheDir.isDirectory()){
             String[] children = cacheDir.list();
@@ -787,7 +757,7 @@ public class SettingsFragment extends PreferenceFragment{
     }
 
     private double cacheSize(){
-        final String path = activity.getExternalCacheDir().toString();
+        final String path = mContext.getExternalCacheDir().toString();
         File cacheDir = new File(path);
         double result;
         long sByte = 0;
@@ -799,18 +769,6 @@ public class SettingsFragment extends PreferenceFragment{
         }
         result = sByte/1024d/1024d;
         return new BigDecimal(result).setScale(2, BigDecimal.ROUND_HALF_UP).doubleValue();
-    }
-
-    @Override
-    public void onResume() {
-        PreferenceManager.getDefaultSharedPreferences(activity).registerOnSharedPreferenceChangeListener(mListener);
-        super.onResume();
-    }
-
-    @Override
-    public void onPause() {
-        PreferenceManager.getDefaultSharedPreferences(activity).unregisterOnSharedPreferenceChangeListener(mListener);
-        super.onPause();
     }
 
     public static String getStringFromInputStream(InputStream is) throws IOException {

@@ -37,16 +37,14 @@ public class SettingsActivity extends Activity{
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.d(LOG_TAG,"onCreate");
-
-        Intent intent = new Intent();
-        String packageName = getPackageName();
-        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
-        if (!pm.isIgnoringBatteryOptimizations(packageName)){
-            intent.setAction(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
-            intent.setData(Uri.parse("package:" + packageName));
-            startActivity(intent);
-        }
+//        Intent intent = new Intent();
+//        String packageName = getPackageName();
+//        PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+//        if (!pm.isIgnoringBatteryOptimizations(packageName)){
+//            intent.setAction(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+//            intent.setData(Uri.parse("package:" + packageName));
+//            startActivity(intent);
+//        }
 
         getFragmentManager().beginTransaction()
                             .replace(android.R.id.content, new SettingsFragment())
@@ -56,7 +54,6 @@ public class SettingsActivity extends Activity{
 
     @Override
     public View onCreateView(String name, Context context, AttributeSet attrs) {
-        //Log.d(LOG_TAG,"onCreateView");
         return super.onCreateView(name, context, attrs);
     }
 

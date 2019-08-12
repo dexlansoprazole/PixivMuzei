@@ -43,20 +43,13 @@ import java.net.URL;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class PixivPublicAPI {
+class PixivPublicAPI {
     private static final String LOG_TAG = "PixivPublicAPI";
     private static final String USER_AGENT = "PixivIOSApp/5.1.1";
     private static final String REFERER = "http://www.pixiv.net";
     private static final String CONTENT_TYPE = "application/x-www-form-urlencoded";
     private static final String CLIENT_ID = "KzEZED7aC0vird8jWyHM38mXjNTY";
     private static final String CLIENT_SECRET = "W9JZoJe00qPvJsiyCGT3CCtC6ZUtdpKpzMbNlUGP";
-    private static String accessToken = null;
-    private static String refreshToken = null;
-    private static PixivLoginManager PLM = null;
-
-    public PixivPublicAPI(Context context){
-        PLM = new PixivLoginManager(context);
-    }
 
     private static JSONObject HTTPRequest(String url, String method, String parameters, String accessToken){
         try {
@@ -99,7 +92,7 @@ public class PixivPublicAPI {
         return null;
     }
 
-    public static JSONObject login(final String username, final String password) throws GetDataFailedException{
+    static JSONObject login(final String username, final String password) throws GetDataFailedException{
         String parameters = "username=" + username +
                 "&password=" + password +
                 "&grant_type=password" +
@@ -108,8 +101,6 @@ public class PixivPublicAPI {
 
         try {
             JSONObject r = HTTPRequest("https://oauth.secure.pixiv.net/auth/token", "POST", parameters, null).getJSONObject("response");
-            accessToken = r.getString("access_token");
-            refreshToken = r.getString("refresh_token");
             return r;
         } catch (JSONException | NullPointerException e) {
             e.printStackTrace();
@@ -117,10 +108,11 @@ public class PixivPublicAPI {
         }
     }
 
-    static String getRanking(String mode, String page, String per_page) throws GetDataFailedException{
+    static String getRanking(Context context, String mode, String page, String per_page) throws GetDataFailedException{
+        PixivLoginManager plm = new PixivLoginManager(context);
         String url = "https://public-api.secure.pixiv.net/v1/ranking/all?mode=" + mode + "&page=" + page + "&per_page=" + per_page + "&image_sizes=large&include_stats=true";
         try {
-            String r = HTTPRequest(url, "GET", null, PLM.getAccessToken()).getJSONArray("response").getJSONObject(0).getJSONArray("works").toString();
+            String r = HTTPRequest(url, "GET", null, plm.getAccessToken()).getJSONArray("response").getJSONObject(0).getJSONArray("works").toString();
             Log.i(LOG_TAG,"Get ranking succeeded(page "+page+")");
             return r;
         } catch (JSONException | NullPointerException e) {
@@ -129,7 +121,8 @@ public class PixivPublicAPI {
         }
     }
 
-    static JSONObject getRanking_personalized(String mode, String page, String per_page) throws GetDataFailedException{
+    static JSONObject getRanking_personalized(Context context, String mode, String page, String per_page) throws GetDataFailedException{
+        PixivLoginManager plm = new PixivLoginManager(context);
         String url = null;
         switch (mode){
             case "userFav":
@@ -144,7 +137,7 @@ public class PixivPublicAPI {
         }
 
         try {
-            JSONObject r = HTTPRequest(url, "GET", null, PLM.getAccessToken());
+            JSONObject r = HTTPRequest(url, "GET", null, plm.getAccessToken());
             Log.i(LOG_TAG,"Get ranking succeeded(page "+page+")");
             return r;
         } catch (NullPointerException e) {
@@ -153,7 +146,7 @@ public class PixivPublicAPI {
         }
     }
 
-    public JSONObject refreshAccessToken(String refreshToken) throws GetDataFailedException {
+    static JSONObject refreshAccessToken(String refreshToken) throws GetDataFailedException {
         String parameters = "refresh_token=" + refreshToken +
                 "&grant_type=refresh_token" +
                 "&client_id=" + CLIENT_ID +
@@ -161,8 +154,6 @@ public class PixivPublicAPI {
 
         try {
             JSONObject r = HTTPRequest("https://oauth.secure.pixiv.net/auth/token", "POST", parameters, null).getJSONObject("response");
-            accessToken = r.getString("access_token");
-            refreshToken = r.getString("refresh_token");
             return r;
         } catch (JSONException | NullPointerException e) {
             e.printStackTrace();
@@ -174,7 +165,7 @@ public class PixivPublicAPI {
         String originalImageURL;
         String imageID;
         File outputFile;
-        URL ImageURL;
+       URL ImageURL;
         HttpURLConnection conn;
         try {
             originalImageURL = work.getImage_urls().getString("large");
@@ -237,8 +228,9 @@ public class PixivPublicAPI {
         return Uri.parse("file://" + outputFile.getAbsolutePath());
     }
 
-    public static PixivArtwork getWorkById(int illustId) throws GetDataFailedException{
-        String accessToken = PLM.getAccessToken();
+    static PixivArtwork getWorkById(Context context, int illustId) throws GetDataFailedException{
+        PixivLoginManager plm = new PixivLoginManager(context);
+        String accessToken = plm.getAccessToken();
         HttpURLConnection conn;
         String sWorkURL = "https://public-api.secure.pixiv.net/v1/works/"+illustId+".json?image_sizes=large";
         PixivArtwork result;

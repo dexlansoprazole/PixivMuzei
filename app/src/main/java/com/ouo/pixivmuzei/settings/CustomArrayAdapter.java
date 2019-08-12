@@ -29,15 +29,17 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.RadioButton;
 
-import com.ouo.pixivmuzei.PixivSource;
+import com.ouo.pixivmuzei.PixivLoginManager;
 import com.ouo.pixivmuzei.R;
 
 public class CustomArrayAdapter extends ArrayAdapter<CharSequence> {
+    private static PixivLoginManager mPixivLoginManager;
     private static int selectedPosition;
     private static Object callback;
 
     public CustomArrayAdapter(Context context, CharSequence[] sourceModes, Object callback) {
         super(context, 0, sourceModes);
+        mPixivLoginManager = new PixivLoginManager(context);
         this.callback = callback;
     }
 
@@ -66,7 +68,7 @@ public class CustomArrayAdapter extends ArrayAdapter<CharSequence> {
         RadioButton rbItem = (RadioButton)convertView.findViewById(R.id.rbItem);
         rbItem.setTag(position);
         rbItem.setText(sourceMode);
-        if(position >= 13 && PixivSource.isLogin() < 1){
+        if(position >= 13 && mPixivLoginManager.loginStatus() != PixivLoginManager.LOGIN_STATUS_PERSONAL){
             rbItem.setEnabled(false);
         }
         else

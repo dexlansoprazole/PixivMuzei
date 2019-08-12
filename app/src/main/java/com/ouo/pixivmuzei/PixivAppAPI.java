@@ -52,13 +52,6 @@ public class PixivAppAPI {
     private static final String CONTENT_TYPE = "application/x-www-form-urlencoded";
     private static final String CLIENT_ID = "KzEZED7aC0vird8jWyHM38mXjNTY";
     private static final String CLIENT_SECRET = "W9JZoJe00qPvJsiyCGT3CCtC6ZUtdpKpzMbNlUGP";
-    private static String accessToken = null;
-    private static String refreshToken = null;
-    private static PixivLoginManager PLM = null;
-
-    public PixivAppAPI(Context context){
-        PLM = new PixivLoginManager(context);
-    }
 
     private static JSONObject HTTPRequest(String url, String method, String parameters, String accessToken){
         try {
@@ -111,8 +104,6 @@ public class PixivAppAPI {
 
         try {
             JSONObject r = HTTPRequest("https://oauth.secure.pixiv.net/auth/token", "POST", parameters, null).getJSONObject("response");
-            accessToken = r.getString("access_token");
-            refreshToken = r.getString("refresh_token");
             return r;
         } catch (JSONException e) {
             e.printStackTrace();
@@ -120,14 +111,15 @@ public class PixivAppAPI {
         }
     }
 
-    static JSONArray getRanking(String mode, int loadAmount) throws GetDataFailedException {
+    static JSONArray getRanking(Context context, String mode, int loadAmount) throws GetDataFailedException {
+        PixivLoginManager plm = new PixivLoginManager(context);
         String nextUrl = "https://app-api.pixiv.net/v1/illust/ranking?mode=" + mode;
         String tmp, tmp2 = "";
         JSONArray result;
         int page = 1;
         do{
             try {
-                JSONObject r = HTTPRequest(nextUrl, "GET", null, PLM.getAccessToken());
+                JSONObject r = HTTPRequest(nextUrl, "GET", null, plm.getAccessToken());
                 Log.i(LOG_TAG,"Get ranking succeeded(page " + page + ")");
                 if(r == null)
                     break;
@@ -166,12 +158,13 @@ public class PixivAppAPI {
         }
     }
 
-    static JSONArray getSource(String mode, int loadAmount) throws GetDataFailedException {
+    static JSONArray getSource(Context context, String mode, int loadAmount) throws GetDataFailedException {
+        PixivLoginManager plm = new PixivLoginManager(context);
         String nextUrl = null;
         switch (mode){
             case "userFav":
                 try {
-                    int UID = new PixivUser(new JSONObject(PLM.getJo_user())).getUID();
+                    int UID = new PixivUser(new JSONObject(plm.getJo_user())).getUID();
                     nextUrl = "https://app-api.pixiv.net/v1/user/bookmarks/illust?user_id=" + UID +"&restrict=public";
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -190,7 +183,7 @@ public class PixivAppAPI {
         int page = 1;
         do{
             try {
-                JSONObject r = HTTPRequest(nextUrl, "GET", null, PLM.getAccessToken());
+                JSONObject r = HTTPRequest(nextUrl, "GET", null, plm.getAccessToken());
                 if(r == null)
                     break;
                 Log.i(LOG_TAG,"Get source succeeded(page " + page + ")");

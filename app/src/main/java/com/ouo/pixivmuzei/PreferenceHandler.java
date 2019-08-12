@@ -31,14 +31,12 @@ public class PreferenceHandler {
 
     public PreferenceHandler(Context context){
         mContext = context;
-
         mPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
     }
 
     public int getConfChangeInterval() {
         final int defaultValue = mContext.getResources().getInteger(R.integer.pref_changeInterval_default);
-        final Integer result = mPreferences.getInt("pref_changeInterval", defaultValue);
-        return result;
+        return mPreferences.getInt("pref_changeInterval", defaultValue);
     }
 
     public void setConfChangeInterval(int changeInterval){
@@ -49,8 +47,7 @@ public class PreferenceHandler {
 
     public String getConfSourceMode() {
         final String defaultValue = mContext.getString(R.string.pref_sourceMode_default);
-        final String result = mPreferences.getString("pref_sourceMode", defaultValue);
-        return result;
+        return mPreferences.getString("pref_sourceMode", defaultValue);
     }
 
     public void setConfSourceMode(String sourceMode){
@@ -61,32 +58,27 @@ public class PreferenceHandler {
 
     public int getConfLoadAmount() {
         final int defaultValue = mContext.getResources().getInteger(R.integer.pref_loadAmount_default);
-        final int result = mPreferences.getInt("pref_loadAmount", defaultValue);
-        return result;
+        return mPreferences.getInt("pref_loadAmount", defaultValue);
     }
 
     public boolean getConfIsOnlyUpdateOnWifi() {
         final boolean defaultValue = false;
-        final boolean result = mPreferences.getBoolean("pref_onlyWifi", defaultValue);
-        return result;
+        return mPreferences.getBoolean("pref_onlyWifi", defaultValue);
     }
 
     public boolean getConfIsNoManga() {
         final boolean defaultValue = false;
-        final boolean result = mPreferences.getBoolean("pref_noManga", defaultValue);
-        return result;
+        return mPreferences.getBoolean("pref_noManga", defaultValue);
     }
 
     public boolean getConfIsNoR18() {
         final boolean defaultValue = false;
-        final boolean result = mPreferences.getBoolean("pref_noR18", defaultValue);
-        return result;
+        return mPreferences.getBoolean("pref_noR18", defaultValue);
     }
 
     public boolean getConfIsAutoCheckUpdate() {
         final boolean defaultValue = true;
-        final boolean result = mPreferences.getBoolean("pref_autoCheckUpdate", defaultValue);
-        return result;
+        return mPreferences.getBoolean("pref_autoCheckUpdate", defaultValue);
     }
 
     public void setUpdateInfo(String lastUpdate, String contents){
@@ -97,8 +89,7 @@ public class PreferenceHandler {
     }
 
     public String getLastUpdate() {
-        final String result = mPreferences.getString("lastUpdate", "");
-        return result;
+        return mPreferences.getString("lastUpdate", "");
     }
 
     public void setIsSourceUpToDate(boolean isSourceUpToDate) {
@@ -108,12 +99,10 @@ public class PreferenceHandler {
     }
 
     public Boolean getIsSourceUpToDate() {
-        final Boolean result = mPreferences.getBoolean("isSourceUpToDate", false);
-        return result;
+        return mPreferences.getBoolean("isSourceUpToDate", false);
     }
 
     public String getJa_contents() {
-        final String result = mPreferences.getString("ja_contents", "");
-        return result;
+        return mPreferences.getString("ja_contents", "");
     }
 }

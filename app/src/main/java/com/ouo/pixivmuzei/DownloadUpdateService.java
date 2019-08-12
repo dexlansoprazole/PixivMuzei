@@ -34,7 +34,7 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
-import androidx.annotation.IntDef;
+
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.PermissionChecker;
@@ -92,7 +92,6 @@ public class DownloadUpdateService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(LOG_TAG,"onStartCommand");
         downloadUpdate();
         return super.onStartCommand(intent, flags, startId);
     }
@@ -103,7 +102,7 @@ public class DownloadUpdateService extends Service {
         if (permissionCheck != PermissionChecker.PERMISSION_GRANTED){
             Log.w(LOG_TAG, "Permission: Denied");
             Intent requestPermission = new Intent();
-            requestPermission.setClass(this, RequsetPermissionsActivity_API23.class);
+            requestPermission.setClass(this, RequsetPermissionsActivity.class);
             requestPermission.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(requestPermission);
             return;
@@ -191,7 +190,6 @@ public class DownloadUpdateService extends Service {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        Log.d(LOG_TAG,"onBind");
         return null;
     }
 
