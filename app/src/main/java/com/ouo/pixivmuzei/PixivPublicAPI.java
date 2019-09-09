@@ -38,16 +38,22 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 class PixivPublicAPI {
     private static final String LOG_TAG = "PixivPublicAPI";
-    private static final String USER_AGENT = "PixivIOSApp/5.1.1";
+    private static final String USER_AGENT = "PixivAndroidApp/5.0.64 (Android 6.0)";
     private static final String REFERER = "http://www.pixiv.net";
     private static final String CONTENT_TYPE = "application/x-www-form-urlencoded";
     private static final String CLIENT_ID = "KzEZED7aC0vird8jWyHM38mXjNTY";
     private static final String CLIENT_SECRET = "W9JZoJe00qPvJsiyCGT3CCtC6ZUtdpKpzMbNlUGP";
+    private static final String HASH_SECRET = "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c";
 
     private static JSONObject HTTPRequest(String url, String method, String parameters, String accessToken){
         try {
@@ -59,9 +65,14 @@ class PixivPublicAPI {
                 conn.setDoOutput(true);
             conn.setDoInput(true);
             conn.setUseCaches(false);
-            conn.setRequestProperty("Content-type", CONTENT_TYPE);
-            conn.setRequestProperty("Referer", REFERER);
             conn.setRequestProperty("User-Agent", USER_AGENT);
+            DateTimeFormatter formatter = new DateTimeFormatterBuilder()
+                    .appendPattern ( "yyyy-MM-dd'T'HH:mm:ss:SS" )
+                    .toFormatter ();
+            String localTime = LocalDateTime.now().format(formatter);
+            String localTime_hash = md5(localTime + HASH_SECRET);
+            conn.setRequestProperty("X-Client-Time", localTime);
+            conn.setRequestProperty("X-Client-Hash", localTime_hash);
             if(accessToken != null)
                 conn.setRequestProperty("Authorization", "Bearer " + accessToken);
             conn.setRequestMethod(method);
@@ -84,7 +95,7 @@ class PixivPublicAPI {
                 Log.e(LOG_TAG, "Connect Failed:\nResponse code: " + responseCode + "\nError: " + getStringFromInputStream(conn.getErrorStream()));
                 return null;
             }
-        } catch (IOException | JSONException e) {
+        } catch (IOException | JSONException | NoSuchAlgorithmException e) {
             e.printStackTrace();
         }
         return null;
@@ -98,8 +109,7 @@ class PixivPublicAPI {
                 "&client_secret=" + CLIENT_SECRET;
 
         try {
-            JSONObject r = HTTPRequest("https://oauth.secure.pixiv.net/auth/token", "POST", parameters, null).getJSONObject("response");
-            return r;
+            return HTTPRequest("https://oauth.secure.pixiv.net/auth/token", "POST", parameters, null).getJSONObject("response");
         } catch (JSONException | NullPointerException e) {
             e.printStackTrace();
             throw new GetDataFailedException("Login failed");
@@ -304,5 +314,20 @@ class PixivPublicAPI {
         String state = os.toString();
         os.close();
         return state;
+    }
+
+    private static String md5(String input) throws NoSuchAlgorithmException {
+        MessageDigest md = MessageDigest.getInstance("MD5");
+        md.update(input.getBytes());
+        byte[] digests = md.digest();
+        StringBuilder hexStr = new StringBuilder();
+        for(byte d: digests){
+            hexStr.append(toHex(d));
+        }
+        return hexStr.toString();
+    }
+
+    private static String toHex(byte b){
+        return (""+"0123456789abcdef".charAt(0xf&b>>4)+"0123456789abcdef".charAt(b&0xf));
     }
 }
