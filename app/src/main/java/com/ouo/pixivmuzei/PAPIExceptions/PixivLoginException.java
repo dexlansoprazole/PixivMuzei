@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018  Guo Zheng-Yan
+ * Copyright (C) 2019  Guo Zheng-Yan
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,12 +15,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * Email: prtd.lambo@gmail.com
+ *
  */
 
 package com.ouo.pixivmuzei.PAPIExceptions;
 
-public class GetDataFailedException extends Exception {
-    public GetDataFailedException(String msg){
+public class PixivLoginException extends Exception {
+    public PixivLoginException(String msg) {
         super(msg);
+    }
+
+    public PixivLoginException(String msg, Throwable err) {
+        super(msg, err);
     }
 }

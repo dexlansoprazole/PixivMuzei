@@ -59,6 +59,7 @@ import com.google.android.apps.muzei.api.provider.Artwork;
 import com.google.android.apps.muzei.api.provider.ProviderClient;
 import com.google.android.apps.muzei.api.provider.ProviderContract;
 import com.ouo.pixivmuzei.DownloadUpdateService;
+import com.ouo.pixivmuzei.PAPIExceptions.PixivLoginException;
 import com.ouo.pixivmuzei.PixivLoginManager;
 import com.ouo.pixivmuzei.PreferenceHandler;
 import com.ouo.pixivmuzei.R;
@@ -312,7 +313,10 @@ public class SettingsFragment extends PreferenceFragment{
                 });
                 String username = txtUsername.getText().toString();
                 String password = txtPassword.getText().toString();
-                if(mPixivLoginManager.login(username, password)){
+                try {
+                    mPixivLoginManager.login(username, password);
+                } catch (PixivLoginException e) {
+                    e.printStackTrace();
                     showToast(getString(R.string.toast_loginFail));
                     mHandler.post(new Runnable() {
                         @Override

@@ -23,7 +23,8 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
 
-import com.ouo.pixivmuzei.PAPIExceptions.GetDataFailedException;
+import com.ouo.pixivmuzei.PAPIExceptions.PixivAPIException;
+import com.ouo.pixivmuzei.PAPIExceptions.PixivLoginException;
 import com.securepreferences.SecurePreferences;
 
 import org.json.JSONException;
@@ -52,21 +53,21 @@ public class PixivLoginManager {
         deleteUnsafeData();
     }
 
-    public void setAccountInfo(String username, String password){
+    private void setAccountInfo(String username, String password) {
         mPreferences.edit()
                 .putString("username",username)
                 .putString("password",password)
                 .apply();
     }
 
-    public void setLastAccountInfo(String username, String password){
+    private void setLastAccountInfo(String username, String password) {
         mPreferences.edit()
                 .putString("last_username",username)
                 .putString("last_password",password)
                 .apply();
     }
 
-    public void setLoginInfo( String accessToken, String refreshToken, String expires, String jo_user){
+    private void setLoginInfo(String accessToken, String refreshToken, String expires, String jo_user) {
         mPreferences.edit()
                 .putString("accessToken",accessToken)
                 .putString("refreshToken",refreshToken)
@@ -79,7 +80,7 @@ public class PixivLoginManager {
         mPreferences.edit().remove("accessToken").remove("refreshToken").remove("expires").remove("jo_user").apply();
     }
 
-    public void deleteUnsafeData(){
+    private void deleteUnsafeData() {
         File file= new File(mContext.getFilesDir(), "../shared_prefs/LoginInfo.xml");
         if(file.exists())
             file.delete();
@@ -138,35 +139,41 @@ public class PixivLoginManager {
         return sdf.format(d);
     }
 
-    private boolean isExpired(){
+    private boolean isExpired() throws PixivLoginException {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss", Locale.getDefault());
         String expires = getExpires();
         Calendar c = Calendar.getInstance();
         Calendar ce = Calendar.getInstance();
         try {
             ce.setTime(sdf.parse(expires));
-        } catch (ParseException e) {
-            Log.e(LOG_TAG,"isExpired");
-            e.printStackTrace();
+        } catch (ParseException | NullPointerException e) {
+            throw new PixivLoginException("Get isExpired failed", e);
         }
         int result = c.compareTo(ce);
         return result >= 0;
     }
 
-    public boolean login(String username, String password){
+    public void login(String username, String password) throws PixivLoginException {
         JSONObject loginResponse;
         JSONObject user;
         String accessToken;
         String refreshToken;
         String expires = getExpires(1);
+        if (loginStatus() != PixivLoginManager.LOGIN_STATUS_OUT) {
+            try {
+                refreshAccessToken();
+            } catch (PixivLoginException e) {
+                e.printStackTrace();
+            }
+        }
 
         if(loginStatus() != PixivLoginManager.LOGIN_STATUS_PERSONAL){
             if(loginStatus() == PixivLoginManager.LOGIN_STATUS_PUBLIC && username.equals(D_USERNAME) && password.equals(D_PASSWORD))
-                return false;
+                return;
             Log.i(LOG_TAG, "Login with '" + username + "'...");
             //Login by password
             try {
-                loginResponse = PixivPublicAPI.login(username, password);
+                loginResponse = PixivAPI.login(username, password);
                 accessToken = loginResponse.getString("access_token");
                 refreshToken = loginResponse.getString("refresh_token");
                 user = loginResponse.getJSONObject("user");
@@ -175,12 +182,10 @@ public class PixivLoginManager {
                 if(!(username.equals(D_USERNAME) || password.equals(D_PASSWORD)))
                     setLastAccountInfo(username, password);
                 Log.i(LOG_TAG,"Login succeeded");
-            } catch (GetDataFailedException | JSONException e) {
-                Log.w(LOG_TAG, e.getMessage());
-                e.printStackTrace();
-                return true;
+            } catch (PixivAPIException | JSONException e) {
+                throw new PixivLoginException("Login failed", e);
             }
-            Log.d(LOG_TAG, "username: *****" +
+            Log.d(LOG_TAG, "username: " + getUsername() +
                     "\npassword: *****" +
                     "\nexpires: " + expires +
                     "\naccessToken: " + getAccessToken() +
@@ -188,29 +193,27 @@ public class PixivLoginManager {
                     "\njo_user: " + getJo_user()
             );
         }
-        return false;
     }
 
-    boolean login(){
-        return login(D_USERNAME, D_PASSWORD);
+    void login() throws PixivLoginException {
+        login(D_USERNAME, D_PASSWORD);
     }
 
-    void refreshAccessToken(){
+    private void refreshAccessToken() throws PixivLoginException {
         String expires = getExpires(1);
         if(isExpired()){
             Log.i(LOG_TAG,"Refresh accessToken...");
             //Refresh accessToken
             try {
-                JSONObject loginResponse = PixivPublicAPI.refreshAccessToken(getRefreshToken());
-                String accessToken = loginResponse.getString("access_token");
+                JSONObject loginResponse = PixivAPI.refreshAccessToken(getRefreshToken());
+                String accessToken = loginResponse.getString("access_toke");
                 String refreshToken = loginResponse.getString("refresh_token");
                 JSONObject user = loginResponse.getJSONObject("user");
                 setAccountInfo(getUsername(), getPassword());
                 setLoginInfo(accessToken, refreshToken, expires, user.toString());
                 Log.i(LOG_TAG,"Refresh accessToken succeeded");
-            } catch (GetDataFailedException | JSONException e) {
-                Log.w(LOG_TAG, e.getMessage());
-                e.printStackTrace();
+            } catch (PixivAPIException | JSONException e) {
+                throw new PixivLoginException("Refresh accessToken failed", e);
             }
         }
     }

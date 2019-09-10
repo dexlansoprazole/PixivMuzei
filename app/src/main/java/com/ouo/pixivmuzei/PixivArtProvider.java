@@ -39,13 +39,15 @@ import androidx.core.content.PermissionChecker;
 import com.google.android.apps.muzei.api.UserCommand;
 import com.google.android.apps.muzei.api.provider.Artwork;
 import com.google.android.apps.muzei.api.provider.MuzeiArtProvider;
-import com.ouo.pixivmuzei.PAPIExceptions.GetDataFailedException;
+import com.ouo.pixivmuzei.PAPIExceptions.PixivAPIException;
+import com.ouo.pixivmuzei.PAPIExceptions.PixivLoginException;
 
 import org.json.JSONException;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class PixivArtProvider extends MuzeiArtProvider {
     private static final String LOG_TAG = "PixivArtProvider";
@@ -102,8 +104,11 @@ public class PixivArtProvider extends MuzeiArtProvider {
 
         if(plm.loginStatus() == PixivLoginManager.LOGIN_STATUS_OUT) {
             Log.i(LOG_TAG, "Login by pixmuzei...");
-            if(plm.login(D_USERNAME, D_PASSWORD)){
-                showToast(context.getString(R.string.toast_loginFail));
+            try {
+                plm.login(D_USERNAME, D_PASSWORD);
+            } catch (PixivLoginException e) {
+                Log.e(LOG_TAG, "Download illust failed");
+                e.printStackTrace();
                 return true;
             }
         }
@@ -115,11 +120,10 @@ public class PixivArtProvider extends MuzeiArtProvider {
         File file;
 
         try {
-            paw = PixivPublicAPI.getWorkById(context, Integer.parseInt(artwork.getToken()));
-        }catch (NullPointerException e){
-            Log.e(LOG_TAG, "Current illustId missed");
-            return true;
-        }catch (GetDataFailedException e){
+            paw = PixivAPI.getWorkById(context, Integer.parseInt(Objects.requireNonNull(artwork.getToken(), "No illustId")));
+        } catch (PixivAPIException e) {
+            Log.e(LOG_TAG, "Download illust failed");
+            e.printStackTrace();
             return true;
         }
 
@@ -148,7 +152,7 @@ public class PixivArtProvider extends MuzeiArtProvider {
         request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
         request.addRequestHeader("Content-Type", "application/x-www-form-urlencoded");
         request.addRequestHeader("Referer", "http://www.pixiv.net");
-        request.addRequestHeader("User-Agent", "PixivIOSApp/5.1.1");
+        request.addRequestHeader("User-Agent", "PixivAndroidApp/5.0.64 (Android 6.0)");
         request.setDestinationInExternalPublicDir("/pixivmuzei/", "pixiv" + imageID + fileType);
         downloadManager.enqueue(request);
         showToast(context.getString(R.string.toast_downloading));

@@ -34,7 +34,8 @@ import androidx.work.WorkerParameters;
 
 import com.google.android.apps.muzei.api.provider.Artwork;
 import com.google.android.apps.muzei.api.provider.ProviderContract;
-import com.ouo.pixivmuzei.PAPIExceptions.GetDataFailedException;
+import com.ouo.pixivmuzei.PAPIExceptions.PixivAPIException;
+import com.ouo.pixivmuzei.PAPIExceptions.PixivLoginException;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -44,13 +45,12 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Random;
 import java.util.TimeZone;
 
 public class PixivWorker extends Worker {
     private static final String LOG_TAG = "PixivWorker";
-    private static final String D_USERNAME = "user_pyda3858";
-    private static final String D_PASSWORD = "pixivmuzeiservice0";
     private static Context appContext;
     private static PixivLoginManager mPixivLoginManager;
     private static PreferenceHandler mPreferenceHandler;
@@ -67,14 +67,17 @@ public class PixivWorker extends Worker {
     @Override
     public Result doWork() {
         final String sourceMode = mPreferenceHandler.getConfSourceMode();
-        final Integer loadAmount = mPreferenceHandler.getConfLoadAmount();
+        final int loadAmount = mPreferenceHandler.getConfLoadAmount();
         JSONArray contents = null;
 
         //Try login
-        if(mPixivLoginManager.login()){
+        try {
+            mPixivLoginManager.login();
+        } catch (PixivLoginException e) {
+            Log.e(LOG_TAG, "Advance failed");
+            e.printStackTrace();
             return Result.retry();
         }
-        mPixivLoginManager.refreshAccessToken();
 
         checkIsSourceUpToDate();
         boolean isSourceUpToDate = mPreferenceHandler.getIsSourceUpToDate();
@@ -83,14 +86,10 @@ public class PixivWorker extends Worker {
             Log.i(LOG_TAG, "Updating source data...");
 
             try{
-                if (sourceMode.equals("userFav") || sourceMode.equals("following") || sourceMode.equals("recommend"))
-                    contents = PixivAppAPI.getSource(appContext, sourceMode, loadAmount);
-                else
-                    contents = PixivAppAPI.getRanking(appContext, sourceMode, loadAmount);
-            } catch (GetDataFailedException e){
-                Log.e(LOG_TAG, e.getMessage());
+                contents = PixivAPI.getSource(appContext, sourceMode, loadAmount);
+            } catch (PixivAPIException e) {
+                Log.e(LOG_TAG, "Advance failed");
                 e.printStackTrace();
-                Log.e(LOG_TAG, "Update source data failed");
                 return Result.retry();
             }
 
@@ -116,9 +115,9 @@ public class PixivWorker extends Worker {
             try {
                 final JSONObject content = contents.getJSONObject(random.nextInt(contents.length()));
                 paw = new PixivArtwork(content);
-                paw_PPAPI = PixivPublicAPI.getWorkById(appContext, paw.getId());
-            } catch (IndexOutOfBoundsException | NullPointerException | JSONException | GetDataFailedException e) {
-                Log.e(LOG_TAG, e.getMessage());
+                paw_PPAPI = PixivAPI.getWorkById(appContext, paw.getId());
+            } catch (IndexOutOfBoundsException | NullPointerException | JSONException | PixivAPIException e) {
+                Log.e(LOG_TAG, "Advance failed");
                 e.printStackTrace();
                 return Result.retry();
             }
@@ -145,10 +144,10 @@ public class PixivWorker extends Worker {
             final Uri fileUri;
             try {
                 Log.i(LOG_TAG,"Downloading illustration...");
-                fileUri = PixivPublicAPI.downloadIllust(paw_PPAPI, appContext.getExternalCacheDir().toString());
+                fileUri = PixivAPI.downloadIllust(paw_PPAPI, Objects.requireNonNull(appContext.getExternalCacheDir(), "Can't get ExternalCacheDir").toString());
                 Log.i(LOG_TAG,"Download illustration succeeded");
-            } catch (GetDataFailedException e) {
-                Log.e(LOG_TAG, e.getMessage());
+            } catch (PixivAPIException | NullPointerException e) {
+                Log.e(LOG_TAG, "Advance failed");
                 e.printStackTrace();
                 return Result.retry();
             }

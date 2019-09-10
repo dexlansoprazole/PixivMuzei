@@ -23,7 +23,7 @@ import android.content.Context;
 import android.net.Uri;
 import android.util.Log;
 
-import com.ouo.pixivmuzei.PAPIExceptions.GetDataFailedException;
+import com.ouo.pixivmuzei.PAPIExceptions.PixivAPIException;
 import com.ouo.pixivmuzei.settings.SettingsFragment;
 
 import org.json.JSONArray;
@@ -40,16 +40,25 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class PixivAppAPI {
-    private static final String LOG_TAG = "PixivAppAPI";
-    private static final String USER_AGENT = "PixivIOSApp/5.1.1";
+class PixivAPI {
+    private static final String LOG_TAG = "PixivAPI";
+    private static final String USER_AGENT = "PixivAndroidApp/5.0.64 (Android 6.0)";
     private static final String REFERER = "http://www.pixiv.net";
     private static final String CONTENT_TYPE = "application/x-www-form-urlencoded";
     private static final String CLIENT_ID = "KzEZED7aC0vird8jWyHM38mXjNTY";
     private static final String CLIENT_SECRET = "W9JZoJe00qPvJsiyCGT3CCtC6ZUtdpKpzMbNlUGP";
+    private static final String HASH_SECRET = "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c";
 
     private static JSONObject HTTPRequest(String url, String method, String parameters, String accessToken){
         try {
@@ -61,9 +70,14 @@ public class PixivAppAPI {
                 conn.setDoOutput(true);
             conn.setDoInput(true);
             conn.setUseCaches(false);
-            conn.setRequestProperty("Content-type", CONTENT_TYPE);
-            conn.setRequestProperty("Referer", REFERER);
             conn.setRequestProperty("User-Agent", USER_AGENT);
+            DateTimeFormatter formatter = new DateTimeFormatterBuilder()
+                    .appendPattern ( "yyyy-MM-dd'T'HH:mm:ss:SS" )
+                    .toFormatter ();
+            String localTime = LocalDateTime.now().format(formatter);
+            String localTime_hash = md5(localTime + HASH_SECRET);
+            conn.setRequestProperty("X-Client-Time", localTime);
+            conn.setRequestProperty("X-Client-Hash", localTime_hash);
             if(accessToken != null)
                 conn.setRequestProperty("Authorization", "Bearer " + accessToken);
             conn.setRequestMethod(method);
@@ -86,14 +100,13 @@ public class PixivAppAPI {
                 Log.e(LOG_TAG, "Connect Failed:\nResponse code: " + responseCode + "\nError: " + getStringFromInputStream(conn.getErrorStream()));
                 return null;
             }
-        } catch (IOException | JSONException e) {
+        } catch (IOException | JSONException | NoSuchAlgorithmException e) {
             e.printStackTrace();
-            Log.e(LOG_TAG, "HTTP request failed");
         }
         return null;
     }
 
-    public static JSONObject login(final String username, final String password) throws GetDataFailedException {
+    static JSONObject login(final String username, final String password) throws PixivAPIException {
         String parameters = "username=" + username +
                 "&password=" + password +
                 "&grant_type=password" +
@@ -101,92 +114,61 @@ public class PixivAppAPI {
                 "&client_secret=" + CLIENT_SECRET;
 
         try {
-            JSONObject r = HTTPRequest("https://oauth.secure.pixiv.net/auth/token", "POST", parameters, null).getJSONObject("response");
-            return r;
-        } catch (JSONException e) {
-            e.printStackTrace();
-            throw new GetDataFailedException("Login failed");
+            return Objects.requireNonNull(HTTPRequest("https://oauth.secure.pixiv.net/auth/token", "POST", parameters, null), "No response").getJSONObject("response");
+        } catch (JSONException | NullPointerException e) {
+            throw new PixivAPIException("Login failed", e);
         }
     }
 
-    static JSONArray getRanking(Context context, String mode, int loadAmount) throws GetDataFailedException {
-        PixivLoginManager plm = new PixivLoginManager(context);
-        String nextUrl = "https://app-api.pixiv.net/v1/illust/ranking?mode=" + mode;
-        String tmp, tmp2 = "";
-        JSONArray result;
-        int page = 1;
-        do{
-            try {
-                JSONObject r = HTTPRequest(nextUrl, "GET", null, plm.getAccessToken());
-                Log.i(LOG_TAG,"Get ranking succeeded(page " + page + ")");
-                if(r == null)
-                    break;
-                tmp = r.getJSONArray("illusts").toString();
-                if(!r.isNull("next_url"))
-                    nextUrl = r.getString("next_url");
-                else
-                    nextUrl = null;
-                Log.d(LOG_TAG, "tmp: " + tmp);
-
-                tmp = tmp.substring(1, tmp.length() - 1);
-                tmp2 = tmp2 + "," + tmp;
-                page++;
-            } catch (JSONException e) {
-                e.printStackTrace();
-                throw new GetDataFailedException("Get ranking failed(page " + page + ")");
-            }
-        }while (nextUrl != null && page <= loadAmount / 30);
-
-        if (!tmp2.isEmpty()){
-            //Get ranking succeeded
-            tmp2 = tmp2.substring(1);
-            SettingsFragment.isLoadAmountChanged = false;
-            SettingsFragment.isSourceModeChanged = false;
-        }
-        else {
-            throw new GetDataFailedException("Get ranking failed");
-        }
+    static JSONObject refreshAccessToken(String refreshToken) throws PixivAPIException {
+        String parameters = "refresh_token=" + refreshToken +
+                "&grant_type=refresh_token" +
+                "&client_id=" + CLIENT_ID +
+                "&client_secret=" + CLIENT_SECRET;
 
         try {
-            result = new JSONArray("[" + tmp2 + "]");
-            return result;
-        } catch (JSONException e) {
-            e.printStackTrace();
-            throw new GetDataFailedException("Get ranking failed");
+            return Objects.requireNonNull(HTTPRequest("https://oauth.secure.pixiv.net/auth/token", "POST", parameters, null), "No response").getJSONObject("response");
+        } catch (JSONException | NullPointerException e) {
+            throw new PixivAPIException("Refresh accessToken failed", e);
         }
     }
 
-    static JSONArray getSource(Context context, String mode, int loadAmount) throws GetDataFailedException {
+    static JSONArray getSource(Context context, String mode, int loadAmount) throws PixivAPIException {
         PixivLoginManager plm = new PixivLoginManager(context);
         String nextUrl = null;
-        switch (mode){
-            case "userFav":
-                try {
-                    int UID = new PixivUser(new JSONObject(plm.getJo_user())).getUID();
-                    nextUrl = "https://app-api.pixiv.net/v1/user/bookmarks/illust?user_id=" + UID +"&restrict=public";
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-                break;
-            case  "following":
-                nextUrl = "https://app-api.pixiv.net/v2/illust/follow?restrict=public";
-                break;
-            case "recommend":
-                nextUrl = "https://app-api.pixiv.net/v1/illust/recommended?include_ranking_label=True";
-                break;
+        List<String> personalSourceModes = Arrays.asList("recommend", "following", "userFav");
+        if (personalSourceModes.contains(mode)) {
+            switch (mode) {
+                case "userFav":
+                    try {
+                        int UID = new PixivUser(new JSONObject(plm.getJo_user())).getUID();
+                        nextUrl = "https://app-api.pixiv.net/v1/user/bookmarks/illust?user_id=" + UID + "&restrict=public";
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                case "following":
+                    nextUrl = "https://app-api.pixiv.net/v2/illust/follow?restrict=public";
+                    break;
+                case "recommend":
+                    nextUrl = "https://app-api.pixiv.net/v1/illust/recommended?include_ranking_label=True";
+                    break;
+            }
+        } else {
+            nextUrl = "https://app-api.pixiv.net/v1/illust/ranking?mode=" + mode;
         }
 
         String tmp, tmp2 = "";
         JSONArray result;
         int page = 1;
-        do{
+        do {
             try {
                 JSONObject r = HTTPRequest(nextUrl, "GET", null, plm.getAccessToken());
-                if(r == null)
+                if (r == null)
                     break;
-                Log.i(LOG_TAG,"Get source succeeded(page " + page + ")");
+                Log.i(LOG_TAG, "Get source succeeded(page " + page + ")");
                 tmp = r.getJSONArray("illusts").toString();
-                if(!r.isNull("next_url"))
+                if (!r.isNull("next_url"))
                     nextUrl = r.getString("next_url");
                 else
                     nextUrl = null;
@@ -196,42 +178,38 @@ public class PixivAppAPI {
                 tmp2 = tmp2 + "," + tmp;
                 page++;
             } catch (JSONException e) {
-                e.printStackTrace();
-                throw new GetDataFailedException("Get source failed(page " + page + ")");
+                throw new PixivAPIException("Get source failed(page " + page + ")", e);
             }
-        }while (nextUrl != null && page <= loadAmount / 30);
+        } while (nextUrl != null && page <= loadAmount / 30);
 
-        if (!tmp2.isEmpty()){
+        if (!tmp2.isEmpty()) {
             //Get ranking succeeded
             tmp2 = tmp2.substring(1);
             SettingsFragment.isLoadAmountChanged = false;
             SettingsFragment.isSourceModeChanged = false;
-        }
-        else {
-            throw new GetDataFailedException("Get source failed");
+        } else {
+            throw new PixivAPIException("Get source failed: Empty response");
         }
 
         try {
             result = new JSONArray("[" + tmp2 + "]");
             return result;
         } catch (JSONException e) {
-            e.printStackTrace();
-            throw new GetDataFailedException("Get source failed");
+            throw new PixivAPIException("Get source failed", e);
         }
     }
 
-    static Uri downloadIllust(PixivArtwork work, String path) throws GetDataFailedException{
+    static Uri downloadIllust(PixivArtwork work, String path) throws PixivAPIException {
         String originalImageURL;
         String imageID;
         File outputFile;
-        URL ImageURL;
+       URL ImageURL;
         HttpURLConnection conn;
         try {
             originalImageURL = work.getImage_urls().getString("large");
             imageID = String.valueOf(work.getId());
         } catch (JSONException e) {
-            e.printStackTrace();
-            throw new GetDataFailedException("Download illustration failed");
+            throw new PixivAPIException("Download cache failed", e);
         }
 
         //check for cache
@@ -247,6 +225,7 @@ public class PixivAppAPI {
         Log.d(LOG_TAG, "Image Url To Show: " + originalImageURL);
 
         try {
+            //TODO:　put to HTTPrequest func
             ImageURL = new URL(originalImageURL);
             conn = (HttpURLConnection) ImageURL.openConnection();
             conn.setReadTimeout(10000);
@@ -255,19 +234,15 @@ public class PixivAppAPI {
             conn.setRequestProperty("User-Agent", USER_AGENT);
             conn.setRequestProperty("Referer", REFERER);
             conn.setRequestProperty("Content-Type", CONTENT_TYPE);
-            //conn.setRequestProperty("Authorization", "Bearer " + accessToken);
             conn.setDoInput(true);
             conn.connect();
 
             final int status = conn.getResponseCode();
 
-            switch (status) {
-                case 200:
-                    Log.d(LOG_TAG, "Connect succeeded");
-                    break;
-
-                default:
-                    throw new GetDataFailedException("Connect Failed: " + status);
+            if (status == 200) {
+                Log.d(LOG_TAG, "Connect succeeded");
+            } else {
+                throw new PixivAPIException("Download cache failed: Connect failed: code " + status);
             }
 
             final FileOutputStream fileStream = new FileOutputStream(outputFile);
@@ -280,20 +255,22 @@ public class PixivAppAPI {
             fileStream.close();
             inputStream.close();
         } catch (final IOException e) {
-            e.printStackTrace();
-            throw new GetDataFailedException("Download cache failed");
+            throw new PixivAPIException("Download cache failed", e);
         }
         Log.d(LOG_TAG, "File path: " + outputFile.getAbsolutePath());
         return Uri.parse("file://" + outputFile.getAbsolutePath());
     }
 
-    public static PixivArtwork getWorkById(int illustId, String accessToken) throws GetDataFailedException {
+    static PixivArtwork getWorkById(Context context, int illustId) throws PixivAPIException {
+        PixivLoginManager plm = new PixivLoginManager(context);
+        String accessToken = plm.getAccessToken();
         HttpURLConnection conn;
         String sWorkURL = "https://public-api.secure.pixiv.net/v1/works/"+illustId+".json?image_sizes=large";
         PixivArtwork result;
         int connStatus;
         JSONObject workInfo;
         try {
+            //TODO:　put to HTTPrequest func
             URL workURL = new URL(sWorkURL);
             conn = (HttpURLConnection) workURL.openConnection();
             conn.setReadTimeout(10000);
@@ -307,7 +284,7 @@ public class PixivAppAPI {
             conn.connect();
             connStatus = conn.getResponseCode();
             if (connStatus != 200) {
-                throw new GetDataFailedException("Connect Failed: " + connStatus);
+                throw new PixivAPIException("Get work by ID failed: connect failed: code " + connStatus);
             }
             else {
                 Log.d(LOG_TAG, "Connect succeeded");
@@ -325,28 +302,25 @@ public class PixivAppAPI {
                 inputStream.close();
             }
         } catch (JSONException | IOException e) {
-            e.printStackTrace();
-            throw new GetDataFailedException("Getting work by ID failed");
+            throw new PixivAPIException("Get work by ID failed", e);
         }
         return result;
     }
 
     private static String getImageUrlToShow(String imageUri){
         final Pattern uriPattern = Pattern.compile("^(https?://.+?/)img-original(.+)$");
-        final Pattern uriPattern_app = Pattern.compile("^(https?://i.pximg.net/c/).+(/img-master/.+_master1200.jpg)$");
+        final Pattern uriPattern_app = Pattern.compile("^https?://.+c/.+/img-master?(/img.+)_master1200.+$");
         final Matcher matcher = uriPattern.matcher(imageUri);
         final Matcher mather_app = uriPattern_app.matcher(imageUri);
         if (matcher.matches()) {
             final String base = matcher.group(1), path = matcher.group(2);
-            final String p = path.substring(0, path.length() - 4);
+            String p = path.substring(0, path.length() - 4);
             //Log.d(LOG_TAG, "base:" + base);
             //Log.d(LOG_TAG,"path:"+p);
             return base + "c/1200x1200/img-master" + p +"_master1200.jpg";
         }
         else if(mather_app.matches()){
-            Log.d(LOG_TAG, "APP form matched: " + imageUri);
-            //final String g1 = mather_app.group(1), g2 = mather_app.group(2);
-            //return g1 + "900x1200_90" +g2;
+            Log.d(LOG_TAG, "App form Matched: " + imageUri);
             return imageUri;
         }
         else
@@ -365,5 +339,20 @@ public class PixivAppAPI {
         String state = os.toString();
         os.close();
         return state;
+    }
+
+    private static String md5(String input) throws NoSuchAlgorithmException {
+        MessageDigest md = MessageDigest.getInstance("MD5");
+        md.update(input.getBytes());
+        byte[] digests = md.digest();
+        StringBuilder hexStr = new StringBuilder();
+        for(byte d: digests){
+            hexStr.append(toHex(d));
+        }
+        return hexStr.toString();
+    }
+
+    private static String toHex(byte b){
+        return (""+"0123456789abcdef".charAt(0xf&b>>4)+"0123456789abcdef".charAt(b&0xf));
     }
 }

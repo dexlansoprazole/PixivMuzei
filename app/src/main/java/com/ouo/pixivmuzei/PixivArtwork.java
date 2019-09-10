@@ -28,7 +28,7 @@ import org.json.JSONObject;
 public class PixivArtwork {
     private static final String LOG_TAG = "PixivArtwork";
     public JSONObject content;
-    public JSONObject work;
+    private JSONObject work;
 
     PixivArtwork(JSONObject content){
         try {
