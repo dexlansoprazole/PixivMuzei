@@ -72,7 +72,7 @@ class PixivAPI {
             conn.setUseCaches(false);
             conn.setRequestProperty("User-Agent", USER_AGENT);
             DateTimeFormatter formatter = new DateTimeFormatterBuilder()
-                    .appendPattern ( "yyyy-MM-dd'T'HH:mm:ss:SS" )
+                    .appendPattern("yyyy-MM-dd'T'HH:mm:ss'+00:00'")
                     .toFormatter ();
             String localTime = LocalDateTime.now().format(formatter);
             String localTime_hash = md5(localTime + HASH_SECRET);
